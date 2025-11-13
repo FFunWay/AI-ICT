@@ -1546,11 +1546,6 @@ button.primary:not(:disabled):active{
             localStorage.setItem('ble_command', JSON.stringify(commandPayload));
             console.log('已傳送指令:', commandPayload);
         }
-
-        document.getElementById('sendBee').onclick = () => {
-            // 'bee' 對應到 playSystem 網頁中的 'case bee'
-            sendCommand('bee'); 
-        };
     </script>
     </div>
   </div>
@@ -3146,6 +3141,16 @@ function showResult(){
     passed = pct >= 70; // 70% 以上算通關
   }
 
+  if (pct >= 85) {
+    // 100% ~ 85%
+    sendCommand('bee');
+  } else if (pct >= 50) {
+    // 84% ~ 50%
+    sendCommand('haha');
+  } else {
+    sendCommand('fail');
+  }
+  
   // ---- 結果畫面：超顯眼總分區塊 ----
   const rtScoreEl   = document.getElementById('rtScore');
   const rtPassEl    = document.getElementById('rtPass');
