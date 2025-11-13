@@ -3141,10 +3141,8 @@ function showResult(){
   }
 
   if (pct >= 85) {
-    // 100% ~ 85%
     sendCommand('bee');
-  } else if (pct >= 50) {
-    // 84% ~ 50%
+  } else if (pct >= 70) {
     sendCommand('haha');
   } else {
     sendCommand('fail');
