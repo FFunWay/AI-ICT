@@ -1,0 +1,3490 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>AI-ICT 測驗系統</title>
+
+<!-- Firebase（Compat 版） -->
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet">
+<!-- Fonts: 中文用 Noto Serif TC；英文用 Libre Caslon Text -->
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Noto+Serif+TC:wght@400;600;700;900&display=swap" rel="stylesheet">
+<!-- Body 字體：Noto Sans TC（400/500/600/700） -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" href="/fonts/Konatu.woff2" as="font" type="font/woff2" crossorigin>
+
+<style>
+:root{
+  /* ===== Warm Claude-ish palette（淡米＋復古橘紅）===== */
+  --bg:        #F8F6F2;   /* 頁面背景：溫暖淡米 */
+  --surface:   #FFFFFF;   /* 卡片白 */
+  --ink:       #2B2B2B;   /* 主文字：偏暖的深灰黑 */
+  --muted:     #6B6B6B;   /* 次文字 */
+
+  /* 主色（復古橘紅） */
+  --primary-600:#D96B3B;  /* 按鈕/重點 */
+  --primary-700:#C35A2E;  /* hover/active */
+
+  /* 成功/錯誤（不改太高彩） */
+  --ok-600:    #23885A;
+  --bad-600:   #C63D3D;
+
+  /* 邊框線條：帶一點米色 */
+  --line:      #E9E1D8;
+
+  /* 提示底色：暖米橘霧面 */
+  --tint:      #FFF3EA;
+  --tint-line: #F2DFD2;
+
+  /* spacing & shadow（保留） */
+  --s1:8px; --s2:12px; --s3:16px; --s4:24px; --s5:32px;
+  --radius-lg:16px; --radius-xl:22px;
+  --shadow-1:0 1px 2px rgba(20,16,12,.06);
+  --shadow-2:0 10px 30px rgba(20,16,12,.12);
+}
+/* --- 全站字體變數 --- */
+:root{
+  --title-font: "Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; /* 跟 AI-ICT 測驗標題同一系 */
+  --body-font: "Konatu", "Noto Sans TC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* 內文維持原先設定 */
+body { font-family: var(--body-font); }
+
+/* 標題與主行銷按鈕，換成標題字體 */
+h1,h2,.brand-title,
+.btn-primary,
+.result-actions .btn,       /* 結果頁兩顆按鈕 */
+.type-btn {                 /* 首頁三顆大按鈕（如果 class 不同，請套到你的 class） */
+  font-family: var(--title-font);
+  letter-spacing: .02em;
+}
+
+/* ===== Typography ===== */
+/* 內文：保留你原本的無襯線搭配中文 Noto Sans TC，手機易讀 */
+body{
+  font-family: "Plus Jakarta Sans","Noto Sans TC",system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* 標題：維持你要的 Caslon × 中文襯線 */
+h1, h2, h3, .brand-title, #home h1, #quiz h1, #result h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif;
+  font-weight: 700;         /* 需要更重可 800 */
+  letter-spacing: .2px;
+}
+
+/* 其餘全站（含英數/中文/表單/按鈕/標籤）統一黑體 */
+html, body, p, li, small, label, input, select, .choice, .hint, .secTitle, .topTime, .muted, .toolbar, .stats, .axis, .value {
+  font-family: "Noto Sans TC", system-ui, -apple-system, Segoe UI, Arial, sans-serif !important;
+  font-weight: 500;         /* 建議 500/600，接近你圖上的份量 */
+}
+
+/* 英數在 Noto Sans TC 下略加字距，視覺更穩 */
+body { letter-spacing: .1px; }
+
+/* 想更貼近招牌那種厚實感，可在局部拉重： */
+.ui-strong, .type-btn, #startBtn, #msg, .choice { font-weight: 600; }
+
+
+/* 首頁大標（加點重量） */
+#home h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif;
+  font-weight: 700;
+}
+#quiz h1, #result h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif;
+}
+
+.topTime{
+  background: var(--tint);
+  border:1px solid var(--tint-line);
+  border-radius:12px; padding:10px 12px;
+  font-weight:700; color:var(--ink);
+}
+/* 外框底條 */
+.bar{
+  height: 12px;
+  background: #E9E3DC;           /* 更淡的米灰 */
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* 內條：淡橘到主色的漸層 */
+.bar > i{
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--primary-600), white 70%) 0%,
+    color-mix(in srgb, var(--primary-600), white 45%) 100%
+  );
+  transition: width .12s linear;
+}
+/* --- 總覽迷你圖上的秒數 at result header --- */
+.mini-bars .bar-label,
+.result-summary .bar-label,
+.result-chart .bar-label {
+  display: inline-flex;         /* 讓數字與 s 同行 */
+  align-items: baseline;
+  gap: .25rem;
+  white-space: nowrap;          /* 關鍵：禁止換行 */
+}
+/* 迷你長條圖容器請允許內容超出，可顯示圓角陰影 */
+.result-chart,
+.mini-bars,
+.mini-bars .bar-col {
+  overflow: visible; /* 關鍵 */
+}
+
+/* 列高再留一點空間，避免頂到 */
+.mini-bars { 
+  padding-top: 8px;    /* 上方多留一點空間給圓角 */
+  padding-bottom: 6px;
+}
+
+/* 如果你的單根長條 class 叫 .bar（或 .col、.stick），加上圓角與陰影 */
+.mini-bars .bar {
+  border-radius: 12px;
+  box-shadow: 0 8px 18px rgba(200,120,80,.12);
+  will-change: transform; /* 捲動更順 */
+}
+/* 結果頁動作鈕 */
+.result-actions{
+  display:flex; gap:16px; flex-wrap:wrap;
+}
+
+.result-actions .btn{
+  font-family: var(--title-font);
+  font-weight: 700;
+  letter-spacing:.02em;
+  padding: 12px 20px;
+  border-radius: 14px;
+  transition: transform .06s ease, box-shadow .2s ease;
+}
+
+.result-actions .btn-primary{
+  background: #D96E3C;        /* 你主色（復古橘紅） */
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(217,110,60,.22);
+}
+.result-actions .btn-primary:active{ transform: translateY(1px); }
+
+.result-actions .btn-ghost{
+  background: #fff;
+  color: #1b1b1b;
+  border: 1px solid rgba(0,0,0,.08);
+}
+/* 讓首頁三顆按鈕的文字置中、留白一致 */
+.type-btn{
+  display:flex; align-items:center; justify-content:center;
+  text-align:center;
+  min-height: 72px;
+}
+
+
+/* 題幹框/說明卡片 */
+.promptPanel{
+  background: var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px; padding:12px; gap:8px;
+}
+
+/* ===== 全站骨架（手機優先） ===== */
+html,body{ height:100%; }
+body{
+  /* Plus Jakarta Sans（英數）＋ Noto Sans TC（中文），系統字備援 */
+  font-family: "Plus Jakarta Sans","Noto Sans TC",system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--bg);
+  margin:0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+/* --- layout safety padding & type buttons --- */
+.page-shell,
+.main-container,
+.home-card { 
+  padding-left: clamp(16px, 4vw, 56px);
+  padding-right: clamp(16px, 4vw, 56px);  /* 關鍵：加右邊內距 */
+  box-sizing: border-box;
+}
+
+.type-list { /* 外層包三顆主按鈕的容器（若你的 class 名不同，套在它的父容器即可） */
+  display: grid;
+  grid-template-columns: 1fr;   /* 直排（手機） */
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .type-list { grid-template-columns: 1fr; }
+}
+
+.type-btn {                      /* 三顆大按鈕的共用樣式 */
+  width: 100%;
+  box-sizing: border-box;        /* 避免 padding 讓寬度外擴 */
+  padding: 22px 28px;            /* 稍微大一點的側邊留白 */
+  border-radius: 18px;
+}
+
+
+/* 統一容器：手機鋪滿、桌機置中 */
+.app{ max-width:var(--wrap); margin:0 auto; padding: var(--s3); }
+
+/* 卡片質感 */
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-1);
+  padding: clamp(16px, 4vw, 24px);
+  transition: box-shadow .18s ease, border-color .18s ease;
+}
+.card:hover{ box-shadow:var(--shadow-2); border-color: color-mix(in srgb, var(--line), var(--ink) 12%); }
+.card  { background: var(--surface) !important; }
+.choice{ background: var(--surface) !important; }
+
+
+/* 標題層級（把行內樣式換成這裡控制） */
+#home h1,
+#quiz h1,
+#result h1{
+  font-size: clamp(22px, 5vw, 28px);
+  margin: 0 0 var(--s2);
+  font-weight:800;
+}
+h2{ font-size:var(--fs-20); margin: var(--s2) 0 var(--s1); }
+p, label, small{ color:var(--ink); }
+
+/* 小提示條（取代刺眼的色塊） */
+.hint{
+  background: var(--hint);
+  border:1px solid var(--hint-line);
+  border-radius:12px;
+  padding: 10px 12px;
+  color: var(--ink);
+}
+
+/* 表單與輸入（手機可點區塊大一點） */
+input, select{
+  height: 44px; padding: 10px 12px;
+  border:1px solid var(--line);
+  border-radius:12px; width:100%;
+  font-size: var(--fs-16);
+  background:#fff;
+}
+
+button{
+  min-height:52px; padding:14px 16px;
+  border-radius: 16px; border:1px solid transparent;
+  font-weight: 700; font-size: 16px;
+  cursor:pointer; user-select:none; transition: .18s ease;
+}
+button.primary{
+  background: var(--primary-600);
+  color:#fff;
+  border:1px solid color-mix(in srgb, var(--primary-600), white 20%);
+  box-shadow: 0 6px 14px rgba(201, 90, 46, .18);
+}
+button.primary:hover{ background: var(--primary-700); transform: translateY(-1px); }
+button.primary:active{ transform: translateY(0); filter: brightness(.98); }
+
+/* 停用時也要看得見（但無互動） */
+button.primary:disabled{
+  background: color-mix(in srgb, var(--primary-600), white 60%);
+  border-color: color-mix(in srgb, var(--primary-600), white 50%);
+  color:#fff; opacity:1; cursor:not-allowed; box-shadow:none;
+}
+
+/* 選項（A/B/C/OX/配對）統一卡片感 */
+/* 選項：手機單欄；>420px 變兩欄（用 twoCol 控制） */
+.choices{
+  display:grid;
+  grid-template-columns: 1fr;                 /* 手機單欄 */
+  gap: clamp(10px, 3.8vw, 18px);
+  align-content:stretch; align-items:stretch; justify-items:stretch; overflow:hidden;
+}
+.choice{
+  background: var(--surface);                 /* 讓卡片是實心白，不再半透明 */
+  border: 1px solid var(--line);              /* 細邊框，質感更俐落 */
+  border-radius:16px;
+  min-height: 96px;                           /* 手機高度更剛好 */
+  display:grid; place-items:center;
+  padding: 14px;
+  transition: transform .06s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.choice:hover{ box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary-600), white 70%); }
+.choice:active{ transform: scale(.985); }
+.choice.ok{
+  border-color: color-mix(in srgb, var(--ok-600), white 40%);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--ok-600), white 70%);
+}
+.choice.bad{
+  border-color: color-mix(in srgb, var(--bad-600), white 40%);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--bad-600), white 70%);
+}
+
+/* OX 題：兩顆大按鈕平分（手機） */
+.ox{ display:grid; grid-template-columns:1fr 1fr; gap: var(--s2); }
+.ox button{ width:100%; }
+
+/* 進度/計時條（柔順） */
+.topTime{ background: linear-gradient(180deg,#fff,#f9fafb); border:1px solid var(--line); border-radius:12px; padding:10px 12px; font-weight:700; }
+/* 外框（底條）再淺一點，但不要到白 */
+.bar{
+  height: 12px;
+  background: #F0E8E0;      /* 淺米色 */
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* 內條：淡橘漸層，對比仍看得到 */
+.bar > i{
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, #D96B3B, white 70%) 0%,
+    color-mix(in srgb, #D96B3B, white 45%) 100%
+  );
+  transition: width .12s linear;
+}
+
+
+/* 訊息結果色彩（成功/錯誤） */
+#msg{ font-size:var(--fs-16); font-weight:700; margin-top: var(--s2); }
+.msg--ok{ color:var(--ok-600); }
+.msg--bad{ color:var(--bad-600); }
+
+/* 結果頁的條狀圖：加間距、數字可讀 */
+.bars{ display:grid; gap: var(--s1); }
+.bar-item{ display:flex; align-items:center; gap: var(--s2); }
+.bar-item .label{ width:88px; color:var(--muted); font-size:var(--fs-14); }
+.bar-item .track{ flex:1; height:14px; background:#e9ecef; border-radius:999px; overflow:hidden; }
+.bar-item .fill{ height:100%; width:0; background: linear-gradient(90deg,#93c5fd,#34d399); transition: width .35s cubic-bezier(.22,1,.36,1); }
+.bar-item .value{ width:44px; text-align:right; font-weight:700; }
+
+.card{ box-shadow: var(--shadow-1); border:1px solid var(--line); border-radius:16px; }
+.card:hover{ box-shadow: var(--shadow-2); border-color: color-mix(in srgb, var(--line), var(--ink) 12%); }
+
+
+/* 手機 → 平板/桌機時才加 2 欄 */
+@media (min-width: 420px){
+  .choices.twoCol{ grid-template-columns:1fr 1fr; }
+}
+/* 桌面寬度的容器限制 */
+@media (min-width: 900px){
+  .app{
+    max-width: 960px;
+    margin: 0 auto;
+    padding-block: 48px;
+  }
+  #home.card, #quiz.card, #result.card{
+    width: min(900px, 92vw);
+    margin-inline: auto;
+  }
+}
+/* 桌機優化：更寬、更大的標題與按鈕，剛進站就有份量 */
+@media (min-width: 1200px){
+  .app{
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-block: 56px;     /* 上下留白更大 */
+  }
+  #home.card{
+    width: min(1100px, 94vw);
+  }
+  #home h1{
+    font-size: clamp(40px, 3vw, 52px);
+    letter-spacing: .3px;
+    margin-bottom: 18px;
+  }
+  #home .type-btn{
+    padding: 16px 18px;
+    font-size: 18px;
+  }
+  #home input[type="number"]{
+    height: 48px;
+    font-size: 18px;
+  }
+  #startBtn.primary{
+    min-height: 58px;
+    font-size: 18px;
+  }
+}
+
+  *{box-sizing:border-box;font-family:system-ui, Segoe UI, Helvetica, Arial, sans-serif}
+  body{margin:0;background:var(--bg);color:var(--ink);padding-bottom:env(safe-area-inset-bottom);font-size:var(--base)}
+  .app{width:100%;max-width:var(--wrap);margin:0 auto;padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .muted{color:var(--muted)}
+  button{
+    cursor:pointer;border-radius:14px;border:1px solid #d0d5dd;background:#fff;color:#111;
+    padding:14px 18px;font-size:var(--base);min-height:56px;user-select:none
+  }
+  button.primary{background:var(--primary);border-color:#2b6de9;color:#fff}
+  button.ghost{background:#fff}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input[type=number]{padding:12px;border-radius:12px;border:1px solid #d0d5dd;background:#fff;color:#111;width:128px;font-size:var(--base)}
+  .type-btn.active{background:#e7f0ff;border-color:#2b6de9;color:#0b5ed7}
+
+ /* === 橘底框之間的留白（A/B/C 共用）=== */
+
+/* 外層卡片留一點邊界，讓橘色區塊不會緊貼卡片邊 */
+#quiz.card{ padding:14px; }
+/* 卡片類統一左右多留 4px 視覺呼吸 */
+.card{
+  padding-left: clamp(16px, 4vw, 24px);
+  padding-right: clamp(16px, 4vw, 24px);
+}
+
+/* 橘色計時框 與 題目框：彼此留縫 */
+.topTime{ 
+  padding:8px 10px;         /* 維持緊湊 */
+  margin-bottom:10px;       /* ↓ 與題目框之間的白色縫隙 */
+}
+
+/* 題目框 與 選項：再留一點縫隙 */
+#quiz .promptPanel{
+  padding:12px;
+  margin-top:4px;           /* 與上方計時框不黏在一起 */
+  margin-bottom:12px;       /* 與下方選項保留距離 */
+}
+
+/* 每個選項內部多一點內距，避免內容貼邊 */
+#quiz .choice{
+  padding:14px;             /* 原本 12 → 14 */
+}
+
+/* 4) 時間條與訊息「緊貼選項」：上移，間距很小 */
+#quiz .bar{ height:12px; margin-top:18px;}
+#quiz #msg{ margin:0; padding-top:4px; font-size:clamp(20px, 3.8vw, 26px); }
+
+/* 5) 橘色計時條也微縮，與題目留一點縫（不要緊貼） */
+.topTime{ padding:8px 10px; }
+
+/* 6) C 題的人像＋箭頭列更容易辨識 */
+#quiz .mediaRow{ gap:16px; }
+
+/* === 測驗 B / C 調整題目說明與符號大小 === */
+#quiz .stem {
+  font-size: 15px;          /* 原本 18px → 減小，節省空間 */
+  line-height: 1.3;
+  margin-bottom: 6px;       /* 與符號留縫隙 */
+  text-align: center;
+}
+
+/* 題目的箭頭符號序列（更大更清楚） */
+#quiz .arTok {
+  font-size: 36px;          /* 原本 22px → 放大 */
+  padding: 6px 10px;
+  margin: 2px;
+}
+
+/* C 測驗的起始人像放大 */
+#quiz .promptPanel img.face {
+  width: 120px;             /* 原本 110 → 放大 */
+  height: 120px;
+}
+
+/* === 選項調整（A / B / C 共用）=== */
+#quiz .choice {
+  padding: 18px;            /* 增加內距，避免字圖擠在邊界 */
+  font-size: 18px;          /* 選項文字放大 */
+}
+
+/* 選項圖片放大（B / C 的人像圖示） */
+#quiz .choice img.face {
+  width: 130px;             /* 原本 110 → 放大 */
+  height: 130px;
+  object-fit: contain;
+}
+#quiz .secTitle{ font-family:"Libre Caslon Text","Noto Serif TC",serif; font-weight:700; letter-spacing:.3px; }
+/* === 單題畫面整體網格：時間/題幹/選項/進度/下方列 === */
+#quiz .screen{
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  row-gap: clamp(8px, 2.8vw, 12px);
+}
+
+/* 題幹區更緊湊，避免把選項擠下去 */
+#quiz .promptPanel{
+  padding: clamp(8px, 2.4vw, 12px);
+  margin: 0;
+}
+
+/* 四顆選項 ⇒ 2×2（手機也生效） */
+#quiz .choices.grid2{
+  grid-template-columns: 1fr 1fr !important;
+  gap: clamp(10px, 3.6vw, 14px);
+}
+
+/* 卡片高度用視窗百分比，確保兩排能同屏 */
+#quiz .choices.grid2 .choice{
+  min-height: clamp(110px, 23vh, 160px);
+  padding: clamp(10px, 3.4vw, 16px);
+}
+
+/* 題目主標縮一點，讓出空間給選項 */
+#quiz #stem{
+  font-size: clamp(20px, 5.6vw, 26px);
+  line-height: 1.35;
+}
+
+/* 題目內 token / 箭頭列也一起緊湊 */
+#quiz .tokens{ gap: 8px; }
+#quiz .tok{ padding: 6px 10px; font-size: clamp(16px, 4.2vw, 20px); }
+#quiz .arrows{ gap: 8px; }
+#quiz .arTok{ font-size: clamp(20px, 6vw, 28px); padding: 4px 8px; }
+
+/* 計時條更薄一點，少占高度 */
+#quiz .bar{ height: 10px; }
+
+#quiz h1.secTitle, #result h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif !important;
+  font-weight: 700 !important;
+  letter-spacing: .3px;
+}
+
+  .topTime{
+   background:var(--tint);
+   border:1px solid var(--tint-line);
+   border-radius:12px; padding:10px 12px;
+   font-weight:700; font-size:18px;
+ }
+  .timeRow{display:flex;justify-content:space-between;align-items:center}
+  .tiny{font-size:14px;color:#555}
+
+  /* 題目：置中 + 放大（A 的「左、右」更大） */
+  .promptPanel{
+   background:var(--surface);
+   border:1px solid var(--line);
+   border-radius:12px; padding:12px; gap:8px;
+   height:100%; overflow:hidden;
+   display:flex; flex-direction:column; justify-content:center; align-items:center;
+ }
+  #stem{ text-align:center; font-weight:800; font-size:clamp(26px, 7vw, 40px); line-height:1.2; }
+  .tokens{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .tok{background:#fff;border:2px solid #d0d5dd;border-radius:10px;padding:8px 12px;font-size:clamp(18px, 5.2vw, 24px)}
+  .tok.done{background:#e8f6ed;border-color:#b6e1c7;color:#0f5132}
+  .tok.err{background:#fde2e2;border-color:#f5b5b5;color:#842029}
+
+  /* C 題：人像 + 箭頭同列（窄螢幕自動換行） */
+  .mediaRow{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+  .arrows{font-size:22px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .arTok{padding:4px 8px;border-radius:10px;border:1px dashed #d0d5dd;background:#f5f7fa}
+  .arTok.done{background:#e8f6ed;border-color:#b6e1c7;color:#0f5132}
+  .arTok.err{background:#fde2e2;border-color:#f5b5b5;color:#842029}
+  /* C_REVERSE 專用：把未知步驟「？」標紅加粗 */
+.arTok.missing{
+  background:#ffe9e9;
+  border-color:#ff9b9b;
+  color:#c24141;
+  font-weight:700;
+}
+
+
+  .choices{
+   display:grid;
+   grid-template-columns:1fr; /* 手機單欄；>420px 才兩欄（你下方已有 twoCol 媒體查詢）*/
+   gap:12px; align-content:stretch; align-items:stretch; justify-items:stretch; overflow:hidden;
+ }
+ .choice{
+   background:var(--surface);
+   border:1px solid var(--line);
+   border-radius:16px;
+   min-height:0;
+   display:grid; place-items:center;
+   padding:14px;
+   transition:.07s transform,.15s box-shadow,.2s outline-color;
+   outline:0 solid transparent;
+ }
+  .choice:active{transform:scale(.98)}
+  .choice.tapped{outline-width:3px;outline-color:var(--primary);box-shadow:0 0 0 4px rgba(13,110,253,.15) inset}
+  .choice.bad{background:#fde2e2;border-color:#f5b5b5}
+  .choice.ok{background:#e8f6ed;border-color:#b6e1c7}
+
+/* A_MEMORY 標示更大一些；其餘尺寸沿用 A 題的 .arTok / .choice */
+.memBadge{
+  display:inline-block;
+  margin-left:6px;
+  padding:4px 12px;
+  border-radius:12px;
+  background:#eef3ff;
+  color:#2a4bd7;
+  font-size:clamp(18px, 4.4vw, 22px);
+  font-weight:600;
+}
+.memPrompt{
+  font-size:clamp(18px, 4.4vw, 22px);
+  margin:6px 0 8px;
+}
+
+.choice .glyph, .choice .arrow{
+  font-size: clamp(24px, 7vw, 36px);
+  line-height: 1;
+}
+
+
+.choice[disabled]{opacity:.5;pointer-events:none}
+
+
+  /* A 題按鈕上的箭頭符號更大 */
+  .glyph{font-size:clamp(36px, 8.5vw, 48px); line-height:1;}
+
+  /* B/C 題人像更大 */
+  .face{ width:min(32vw, 110px); height:min(32vw, 110px); object-fit:contain; }
+
+.match-grid { margin-top: .5rem; }
+.pairrow { padding: 4px 8px; border-radius: 8px; background: #f3f4f6; margin-top: 4px; }
+.choice.active { outline: 3px solid #a5b4fc; }
+.choice.good { box-shadow: 0 0 0 3px #34d399 inset; }
+.choice.bad  { box-shadow: 0 0 0 3px #f87171 inset; }
+
+  /* 結果：HTML 直條圖（清晰） */
+  .barRow{height:200px;width:100%;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .mbar{position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center}
+  .mbar>i{width:22px;height:0;background:linear-gradient(180deg,#cfe7ff,#74b6ff);border-radius:8px 8px 0 0;transition:height .6s ease}
+  .mbar .val{position:absolute;top:-18px;font-size:12px;color:#333}
+  .mbar .lab{position:absolute;bottom:-18px;font-size:12px;color:#666}
+  /* ====== Mobile fit tweaks (放在 <style> 的最後) ====== */
+
+/* 讓所有尺寸計算穩定 */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* 響應式間距 */
+:root{
+  --page-pad: clamp(12px, 4vw, 20px);
+  --tile-pad: clamp(12px, 3.6vw, 18px);
+  --gap:      clamp(10px, 3.6vw, 16px);
+  --radius:   18px;
+}
+
+/* ====== Mobile safe fit – 強制覆蓋版 ====== */
+@supports(padding: max(0px)) {
+  body{
+    padding-left:  max(14px, env(safe-area-inset-left)) !important;
+    padding-right: max(14px, env(safe-area-inset-right)) !important;
+    padding-bottom:max(10px, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* 進度條底部預留空間 */
+.progress, .meter, .bar{ margin-bottom: max(10px, env(safe-area-inset-bottom)) !important; }
+
+/* --- mobile fix: choices 自適應高度、圖片直向排版 --- */
+#quiz .choices{
+   display: grid;
+   grid-template-columns: 1fr;          /* 手機保持單欄 */
+   gap: clamp(10px, 3.8vw, 18px);
+   padding-inline: 4px;
+ }
+
+#quiz .choice{
+  display: flex;
+  flex-direction: column;        /* 圖在上、文字在下 */
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3.6vw, 18px);
+  border-radius: 18px;
+  min-height: 180px;             /* 卡片給足空間，不會被切 */
+  box-sizing: border-box;
+}
+
+#quiz .choice .face{
+  display: block;
+  width: min(38vw, 150px);       /* 寬度自適應 */
+  height: auto;                  /* 高度跟著比例 */
+  object-fit: contain;
+}
+
+/* === OX 題專用：兩顆按鈕平均佔寬 + 與外框留白 === */
+#quiz.ox-layout .choices{
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;   /* 平分空間 */
+  gap: clamp(12px, 4vw, 20px) !important;      /* 兩顆之間留空隙 */
+  padding: clamp(8px, 2.4vw, 12px) !important; /* 與外框留空隙 */
+  margin: 0 !important;
+}
+
+#quiz.ox-layout .choice{
+  width: 100% !important;
+  min-width: 0 !important;                      /* 防止把容器撐爆 */
+  min-height: 160px !important;                 /* 卡片高度（可調 160~200） */
+  padding: clamp(12px, 3.6vw, 18px) !important;
+  border-radius: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+/* O / X 的字級與對齊 */
+#quiz.ox-layout .choice .glyph{
+  font-size: clamp(64px, 18vw, 120px) !important;
+  line-height: 1 !important;
+}
+
+
+/* === 情境題卡片（A_SCENARIO）=== */
+.sceneCard {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin: 10px 0 14px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+.sceneCard:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.sceneTitle {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0b5ed7;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sceneBadge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 2px 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.sceneText {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #4b5563;
+  margin: 6px 0 8px;
+  text-align: justify;
+  white-space: pre-line;
+}
+
+.sceneHint {
+  font-size: 14px;
+  color: #6b7280;
+  background: #f9fafb;
+  border-left: 3px solid #cbd5e1;
+  padding: 6px 10px;
+  margin-top: 10px;
+  border-radius: 4px;
+}
+/* === Senior Friendly Overrides（大字體覆蓋）=== */
+
+/* 全站基準字級略放大 */
+:root{ --base: 20px; }
+
+/* 區塊標題更清楚 */
+h1.secTitle{ font-size: clamp(22px, 5.2vw, 28px); }
+
+/* 題目主標（#stem）再大一點、行距拉開 */
+#stem{
+  font-size: clamp(28px, 7.2vw, 44px);
+  line-height: 1.35;
+}
+
+/* 情境卡標題/內容/提示加大 */
+.sceneTitle{ font-size: clamp(20px, 5vw, 24px); }
+.sceneText{  font-size: clamp(17px, 4.6vw, 19px); line-height: 1.7; }
+.sceneHint{  font-size: clamp(16px, 4.4vw, 18px); }
+
+/* 按鈕尺寸：更大的點擊面積與字級 */
+#quiz .choice{
+  min-height: 200px;
+  padding: clamp(14px, 3.8vw, 22px);
+  font-size: clamp(19px, 4.6vw, 21px);
+}
+
+/* 符號更大（↑↓←→） */
+.glyph{ font-size: clamp(44px, 9vw, 60px) !important; }
+
+/* 人物圖更大些，保留比例 */
+#quiz .choice .face{
+  width: min(42vw, 170px);
+  height: auto;
+}
+
+/* 計時條區塊字級 */
+.topTime{ font-size: clamp(18px, 4.6vw, 20px); }
+
+/* 下方訊息（答對/錯）字級 */
+#msg{ font-size: clamp(18px, 4.8vw, 22px) !important; }
+
+/* 較深的輔助色，對比更好 */
+.muted{ color: #495057; }
+
+/* ===== 長者加強模式：字變大、行高大、可點更大、對比更強 ===== */
+:root[data-senior="true"]{
+  --fs-16:18px; --fs-18:20px; --fs-20:22px; --fs-24:26px; --fs-28:30px;
+}
+:root[data-senior="true"] body{ line-height:1.7; letter-spacing:.2px; }
+:root[data-senior="true"] button{ min-height:56px; border-radius:18px; font-size: var(--fs-18); }
+:root[data-senior="true"] .choice{ padding:18px; font-size: var(--fs-18); }
+:root[data-senior="true"] input, :root[data-senior="true"] select{ height:52px; font-size: var(--fs-18); }
+:root[data-senior="true"] .hint{ border-width:2px; }
+:root[data-senior="true"] #msg{ font-size: var(--fs-18); }
+
+.toolbar{ justify-content:flex-end; gap:8px; margin-bottom:6px; }
+
+/* 首頁卡片標題置中＋更有份量 */
+#home h1{
+  text-align:center;
+  font-size: clamp(26px, 5.2vw, 32px);
+  font-weight: 800;
+  letter-spacing: .2px;
+  margin: 0 0 16px;
+}
+/* 首頁卡片內的行距與間距 */
+#home .card{
+  padding: clamp(16px, 4vw, 24px);
+}
+#home .form-row{
+  display:flex; align-items:center; gap:12px;
+}
+#home label{ color:var(--muted); }
+#home input[type="number"]{
+  width: 84px;
+  height: 44px; padding: 8px 10px;
+  border:1px solid var(--line); border-radius:12px;
+  background:#fff; font-weight:700; text-align:center;
+}
+
+#home .type-btn{
+  display:block; width:100%;
+  background:#fff; color:var(--ink);
+  border:1px solid var(--line);
+  border-radius:16px; padding:14px 16px;
+  text-align:center; font-weight:700;
+  transition: border-color .18s, box-shadow .18s, transform .06s;
+}
+#home .type-btn:hover{
+  border-color: color-mix(in srgb, var(--primary-600), white 40%);
+  box-shadow: 0 4px 14px rgba(201,90,46,.10);
+}
+#home .type-btn:active{ transform: scale(.995); }
+#home .type-btn.active{
+  border-color: color-mix(in srgb, var(--primary-600), white 30%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-600), white 80%) inset;
+}
+
+
+/* 底部主按鈕寬度 100% */
+#home .actions{ margin-top: 12px; }
+#home .actions .primary{ width:100%; }
+
+/* 主按鈕：正常狀態 */
+button.primary{
+  background: var(--primary-600);
+  color:#fff;
+  border:1px solid color-mix(in srgb, var(--primary-600), white 20%);
+  transition: transform .06s ease, filter .18s ease, box-shadow .18s ease;
+}
+button.primary:hover{ filter: brightness(.96); }
+button.primary:active{ transform: translateY(1px); }
+
+/* 未可按（disabled）也要有「存在感」，但不能互動 */
+button.primary:disabled{
+  background: color-mix(in srgb, var(--primary-600), white 65%);
+  color: #fff;
+  border-color: color-mix(in srgb, var(--primary-600), white 50%);
+  box-shadow: none;
+  opacity: 1;                 /* 不要灰成看不見 */
+  cursor: not-allowed;
+}
+
+/* 只有可按時才有按壓效果 */
+button.primary:not(:disabled):active{
+  transform: translateY(1px);
+}
+/* 題幹卡風格：標題在上、說明/媒體在下，對齊置中 */
+#quiz .promptPanel{
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  row-gap: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+/* 題幹下方的提示字（你會用 .muted）再柔一點 */
+#quiz .promptPanel .muted{
+  color: color-mix(in srgb, var(--ink), white 45%);
+}
+
+/* 人像圖在題幹區時尺寸稍大，但不會撐高 */
+#quiz .promptPanel img.face{
+  width: min(40vw, 120px);
+  height: auto;
+}
+/* 成績圖主視覺：暖橘系漸層，與 --primary-600 一致 */
+#result .mbar{
+  position: relative;
+  display: inline-flex; flex-direction: column; align-items: center;
+  width: 20%;
+}
+/* 主視覺直條（更淡的暖橘漸層） */
+#result .mbar i{
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--primary-600), white 35%) 0%,
+    color-mix(in srgb, var(--primary-600), white 60%) 70%,
+    color-mix(in srgb, var(--primary-600), white 78%) 100%
+  );
+  box-shadow: 0 4px 12px rgba(201, 90, 46, .12) inset,
+              0 3px 8px rgba(201, 90, 46, .10);
+}
+
+/* 每題明細的水平條（更淡） */
+#result .card .bar > i{
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--primary-600), white 72%) 0%,
+    color-mix(in srgb, var(--primary-600), white 52%) 100%
+  );
+}
+
+#result .mbar .val{
+  position:absolute; top:-22px; font-size:12px; color: var(--muted);
+}
+
+/* 每題詳列的水平條也換成暖橘 */
+#result .card .bar{ height: 12px; background: #EDE5DC; border-radius: 999px; overflow: hidden; }
+#result .card .bar > i{
+  display:block; height:100%;
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--primary-600), white 60%) 0%,
+    var(--primary-600) 100%
+  );
+}
+/* 結果頁水平條：留出內邊距與最小左右圓角 */
+#result .card .bar{
+  position: relative;
+  height: 12px;
+  background: #EDE5DC;
+  border-radius: 999px;
+  overflow: hidden;
+  padding: 2px;               /* 關鍵：給內邊距 → 不會貼到外框 */
+  box-sizing: border-box;
+  margin-inline: 4px;         /* 讓整條與卡片邊再退一點 */
+}
+
+#result .card .bar > i{
+  display: block;
+  height: 100%;
+  width: 0;
+  min-width: 14px;            /* 很短也不會像被「切掉」 */
+  border-radius: 999px;       /* 內條兩端也圓角 */
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--primary-600), white 40%) 0%,
+    var(--primary-600) 100%
+  );
+  transition: width .12s linear;
+}
+
+/* 只有標題維持原設定，其餘全站統一成示例那種字感（Noto Serif TC） */
+:where(body, p, li, small, label, input, select, button,
+.choice, .hint, .topTime, .muted, .toolbar, .stats, .axis, .value,
+#stem, #media, #choices, .sceneCard, .sceneTitle, .sceneText, .sceneHint){
+  font-family: "Noto Serif TC","Noto Sans TC",system-ui,-apple-system,Segoe UI,Arial,sans-serif !important;
+  font-weight: 600; /* 適中厚度，接近你給的範例視覺 */
+}
+
+/* 測驗頁與結果頁的主標題字體跟首頁一樣（保險再鎖一次） */
+#home h1, #quiz h1, #result h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif !important;
+  font-weight: 700;
+}
+/* 題目區的字體全部換 Konatu；標題 #quiz h1 不變 */
+@font-face{
+  font-family: "Konatu";
+  src: url("./fonts/Konatu.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+:root{
+    /* 箭頭/符號安全字體串（順序由專用→系統） */
+    --arrow-font: "Noto Sans Symbols 2","Apple Symbols","Segoe UI Symbol",
+                  "Arial Unicode MS", system-ui, sans-serif;
+    --brand-font: "Konatu", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  /* 網站標題 / 按鈕等你想用 Konatu 的元素 */
+  .brand-font, h1,h2,.btn,.btn-primary,.btn-secondary,
+  .home-card button, .result-actions .btn {
+    font-family: var(--brand-font);
+  }
+
+  /* 題目中的「箭頭指令區、箭頭選項、步驟 token」一率改用符號字體 */
+  .arrow-token, .arrow-seq, .arrow-option, .arrow-text, .symbol,
+  .q-seq .token, .option-card .arrow {
+    font-family: var(--arrow-font);
+    line-height: 1;        /* 讓箭頭不被擠壓 */
+    -webkit-text-size-adjust: 100%;
+  }
+
+/* 測驗頁的大標題維持原來（Caslon/Noto Serif） */
+#quiz h1{ font-family: "Libre Caslon Text","Noto Serif TC",serif !important; font-weight:700 !important; }
+
+/* 題目文字統一 Konatu（A/B/C 全會套到） */
+#quiz #stem,
+#quiz .promptPanel,           /* 題幹整塊 */
+#quiz .promptPanel *:not(h1), /* 題幹內所有子元素，不包含標題 */
+#quiz .sceneCard, .sceneTitle, .sceneText, .sceneHint, /* 情境題卡 */
+#quiz .tok, #quiz .arTok      /* 題幹裡的小 Token（方向詞/箭頭顯示） */
+{
+  font-family: "Konatu","Noto Sans TC",system-ui,-apple-system,Segoe UI,Arial,sans-serif !important;
+  font-weight: 600;
+}
+
+
+
+/* 2) 標題維持你目前的設定（Caslon × Noto Serif） */
+#home h1, #quiz h1, #result h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif !important;
+  font-weight: 700 !important;
+}
+
+/* 只有測驗頁左上角的大標題用 Caslon × Noto Serif */
+#quiz h1, /* 你左上角標題就是這個 */
+#result h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif !important;
+  font-weight: 700 !important;
+}
+
+/* 題幹（中間那段問題字）不要跟著換字體 */
+#stem{
+  font-family: inherit !important;
+}
+/* O/X 題：兩顆大按鈕 */
+#quiz .choices.ox-layout{
+  grid-template-columns: 1fr 1fr !important;
+  gap: clamp(12px, 3.6vw, 16px);
+}
+
+#quiz .choices.ox-layout .choice{
+ min-height: clamp(140px, 26vh, 180px); 
+  font-size: clamp(40px, 10vw, 72px); /* 放大 ○ × */
+  line-height: 1;
+}
+#quiz .choices.ox-layout .choice .glyph{ font-size: clamp(64px, 18vw, 120px) !important; line-height:1; }
+/* 結果頁：每題詳列的水平條（避免短時間看起來像缺一截） */
+#result .card .bar{
+  position: relative;
+  height: 12px;
+  background: #EDE5DC;            /* 底軌 */
+  border-radius: 999px;
+  overflow: hidden;                /* 圓角裁切 */
+}
+
+/* 填色條：兩端圓角 + 最小寬度 + 深一點的起點 */
+#result .card .bar > i{
+  display: block;
+  height: 100%;
+  width: 0;
+  min-width: 12px;                 /* 時間很短也不會「消失」 */
+  border-radius: 999px;            /* 左右端都圓角，視覺不會像被切到 */
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary-600), white 40%) 0%,
+    var(--primary-600) 100%
+  );
+  transition: width .12s linear;
+}
+/* 只在測驗題目區使用 Konatu（A/B/C/情境/箭頭 token） */
+#quiz #stem,
+#quiz .promptPanel,
+#quiz .promptPanel *:not(h1),
+#quiz .sceneCard, #quiz .sceneTitle, #quiz .sceneText, #quiz .sceneHint,
+#quiz .tok, #quiz .arTok {
+  font-family: "Konatu","Noto Sans TC",system-ui,-apple-system,Segoe UI,Arial,sans-serif !important;
+  font-weight: 600;
+}
+
+/* 測驗頁大標＆結果頁標題維持原本的襯線字體，不被上面蓋掉 */
+#quiz h1, #result h1{
+  font-family: "Libre Caslon Text","Noto Serif TC",serif !important;
+  font-weight: 700 !important;
+}
+
+/* ===== 版面：題面／選項卡 ===== */
+.quizPane .questionBox {
+  display:flex; align-items:center; justify-content:center;
+  min-height: 84px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #f1e8df;
+  color: #6b6b6b;
+  font-family: "Konatu", "Noto Sans TC", system-ui, -apple-system, "Segoe UI";
+  font-size: clamp(18px, 2.2vw, 24px);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.quizPane .optionsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.optionCard {
+  display:flex; align-items:center; justify-content:center;
+  min-height: 160px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #efe6dc;
+  transition: box-shadow .15s ease, transform .08s ease, border-color .15s ease;
+}
+.optionCard:hover { box-shadow: 0 6px 20px rgba(0,0,0,.06); transform: translateY(-1px); }
+.optionCard.correct { border-color:#86efac; box-shadow: 0 0 0 3px rgba(134,239,172,.35) inset; }
+.optionCard.wrong   { border-color:#fecaca; box-shadow: 0 0 0 3px rgba(254,202,202,.35) inset; }
+
+/* ===== 題目上方的序列（A 題提示） ===== */
+.seqHint {
+  display:flex; gap:8px; justify-content:center; margin-top:8px;
+}
+.seqHint .chip {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:34px; height:34px; padding:0 8px;
+  border-radius:10px; border:1px solid #dbe0e5; background:#f6f7f8; color:#7b7f84;
+  font-size:18px; line-height:1;
+}
+
+/* ===== 符號大小（含圈叉） ===== */
+.symbol {
+  font-family: "Noto Sans TC", system-ui, "Segoe UI";
+  font-weight: 700;
+  letter-spacing: 0;
+  font-size: clamp(44px, 8.5vw, 96px);  /* ← 這行讓圈叉/箭頭在手機上也很大 */
+}
+
+/* 讓三角形/箭頭看起來一致 */
+.symbol--tri { 
+  /* 專門給三角樣式一點點筆畫粗細 */
+  -webkit-text-stroke: 0; 
+}
+
+/* ===== 進度條底色更可見（避免「前半段很淺像不見」的錯覺） ===== */
+.progress-track {
+  height: 8px; border-radius: 999px; background: #e8e0d7;
+}
+.progress-fill {
+  height: 8px; border-radius: 999px; background: #efb49a;   /* 主色 */
+}
+/* === Fix 1：結果頁每題水平條不再像被切到 === */
+#result .card .bar{
+  position: relative;
+  height: 12px;
+  background: #EDE5DC;
+  border-radius: 999px;
+  overflow: hidden;
+  padding: 2px;           /* 關鍵：內邊距，避免內條貼邊像被切掉 */
+  margin-inline: 6px;     /* 與卡片邊再退一點 */
+  box-sizing: border-box;
+}
+#result .card .bar > i{
+  display: block;
+  height: 100%;
+  min-width: 14px;        /* 很短的秒數也會看得到圓頭，不會像消失 */
+  border-radius: 999px;   /* 兩端保持圓角 */
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--primary-600), white 40%) 0%,
+    var(--primary-600) 100%
+  );
+  transition: width .12s linear;
+}
+
+/* === Fix 2：測驗頁右欄選項不再貼到卡片邊框 === */
+/* 給卡片內容多一點左右留白（含 safe-area）*/
+#quiz.card{
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
+}
+/* 兩欄選項容器再加一點內距，避免右邊貼邊 */
+#quiz .choices{
+  padding-inline: 8px;
+}
+/* 保證每個選項不撐出容器（特別是含圖片時）*/
+#quiz .choice{
+  width: 100%;
+  min-width: 0;           /* 避免內容把格子撐爆 */
+  box-sizing: border-box;
+}
+/* 圖片保持等比且不外溢 */
+#quiz .choice .face{
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* 圖表外卡片與繪圖區：避免溢出被剪掉 */
+.result-card,
+.result-card .chart-area,
+.result-card .chart-plot,
+.result-card .bars-wrap {
+  overflow: visible !important;
+}
+
+/* 給真正放柱子的那一層一點上內距，讓圓角/柔光有空間 */
+.result-card .chart-plot,
+.result-card .bars-wrap {
+  padding-top:24px;           /* 看起來還被吃到就把 16 拉到 20~24 */
+}
+
+/* 常見「柱子」class 的保險覆寫：確保不會被外層 overflow 影響 */
+.result-card .bar,
+.result-card .bar::before,
+.result-card .bar::after {
+  overflow: visible !important;
+}
+
+/* 如果你的圖表容器有圓角，務必讓它不要裁切內容 */
+.result-card .chart-area {
+  border-radius: 16px;         /* 保留外觀 */
+  -webkit-mask-image: none;    /* 避開某些瀏覽器對圓角的硬裁切 */
+  mask-image: none;
+  .result-card .chart-area { overflow: visible !important; }
+
+}
+
+/* y 標籤在上緣太靠近時，給條安全距 */
+.result-card .chart-top-metrics {
+  margin-top: 6px;
+}
+/* ===== 讓「結果頁直條圖」從底部長出，並加一條底線 ===== */
+.barRow{
+  position: relative;
+  overflow: visible;              /* 確保柱頂圓角不被裁切 */
+}
+.barRow::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:2px;               /* 保留高度，做為對齊參考 */
+  background: transparent;  /* ← 改成透明，就不會看到線 */
+  pointer-events: none;
+}
+
+/* 每根柱子固定貼齊底部，往上長 */
+.mbar{
+  position: relative;
+  display: flex;
+  align-items: flex-end;          /* 防守性設定 */
+  justify-content: center;
+}
+.mbar > i{
+  position: absolute;
+  left: 50%;
+  bottom: 0;                      /* 貼齊底部 */
+  transform: translateX(-50%);
+  width: 22px;
+  height: 0;                      /* 起始高度 0 → 往上長 */
+  transform-origin: bottom;       /* 動畫錨點在底部 */
+  transition: height .6s ease;    /* 你原本就有，留著即可 */
+}
+/* 避免版面跳動：預留尺寸與縮放方式 */
+  .option-card img, .q-figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    background: transparent;
+  }
+
+/* === Custom patch: rules dialog unified font + centered + beige === */
+#rulesDialog{
+  display:none !important;
+  position:fixed; inset:0;
+  align-items:center; justify-content:center;
+  background:rgba(0,0,0,.25);
+  z-index:9999;
+}
+#rulesDialog.show{ display:flex !important; }
+
+#rulesDialog, #rulesDialog * {
+  font-family: "Noto Sans TC","Microsoft JhengHei", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
+}
+
+#rulesDialog .card, #rulesDialog .rules-card{
+  background:#F7F1E6 !important;
+  border:1px solid #E8DFD5 !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.08) !important;
+  margin:0 auto !important;
+  font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif !important;
+}
+
+#rulesDialog h3, #rulesDialog .title, #rulesDialog .rules-title{
+  font-family: "Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+#rulesDialog .box, #rulesDialog .leftBox, #rulesDialog .rightBox{
+  background:transparent !important;         /* 不再分兩塊 */
+  border-color:transparent !important;
+}
+#rulesDialog .k{ color:#D96B3B !important; font-weight:800 !important; }
+
+
+/* === Patch 2: full-bleed backdrop + brand serif font like logo === */
+:root{
+  --brand-font: "Noto Serif TC","Source Han Serif TC","Songti TC","PMingLiU",
+                 "Times New Roman", Times, serif;
+}
+#rulesDialog{
+  position: fixed !important;
+  top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+  width: 100vw !important; height: 100vh !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0,0,0,.45) !important; /* 灰色滿版 */
+  z-index: 2147483000 !important;         /* 高層級，確保覆蓋全畫面 */
+  margin: 0 !important; padding: 24px !important;
+}
+#rulesDialog.show{ display:flex !important; }
+#rulesDialog, #rulesDialog *{
+  font-family: var(--brand-font) !important; /* 改為 LOGO 同款調性：明體/襯線 */
+}
+/* 卡片置中 + 陰影 */
+#rulesDialog .card, #rulesDialog .rules-card{
+  margin: 0 auto !important;
+  width: min(960px, 94vw) !important;
+  max-height: min(88vh, 900px) !important;
+  background: #F7F1E6 !important;
+  border: 1px solid #E8DFD5 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,.14) !important;
+  overflow: auto !important;
+  padding: clamp(18px, 3.2vw, 28px) !important;
+}
+/* 取消左右塊背景，保持一體米色 */
+#rulesDialog .box, #rulesDialog .leftBox, #rulesDialog .rightBox, #rulesDialog .cols{
+  background: transparent !important;
+  border: none !important;
+}
+/* 每題配分橘色（再次加強選擇器優先度） */
+#rulesDialog .score-line, 
+#rulesDialog .k, 
+#rulesDialog p span.k{
+  color: #D96B3B !important;
+  font-weight: 800 !important;
+}
+
+</style>
+
+<!-- AI-ICT patch: rules dialog styling & hide badges -->
+<style id="aiict-rules-style">
+/* hide numeric badges next to mode cards */
+.mode-badge, .badgeN, .modeCount { display:none !important; }
+/* dialog base */
+#rulesDialog { max-width: 860px; border: none; padding: 0; }
+#rulesDialog::backdrop { background: rgba(0,0,0,.45); }
+/* card */
+#rulesDialog .card, #rulesDialog .rules-card{
+  background:#F7F1E6 !important;
+  border:1px solid #E8DFD5 !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.08) !important;
+  margin:0 auto !important;
+  font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif !important;
+}
+
+#rulesDialog h3 { font-family:"Noto Serif TC","Times New Roman",serif;
+  font-size:28px; font-weight:800; letter-spacing:.4px; margin:0 0 10px; }
+#rulesDialog .cols { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+#rulesDialog .k { color:#B25A2B; font-weight:800; }
+#rulesDialog ul { margin:6px 0 0 0; padding-left:1.2em; line-height:1.7; }
+#rulesDialog li { margin:.15em 0; }
+#rulesDialog .row { margin:8px 0; }
+#rulesDialog .actions { display:flex; justify-content:flex-end; gap:12px; margin-top:10px; }
+#rulesDialog .btn-ok { background:#D86D3A; color:#fff; border:none; padding:10px 18px; 
+  border-radius:12px; font-weight:800; cursor:pointer; }
+#rulesDialog .btn-cancel { background:#eee; color:#333; border:none; padding:10px 16px; 
+  border-radius:12px; cursor:pointer; }
+@media (max-width: 640px){
+  #rulesDialog .cols { grid-template-columns:1fr; }
+  #rulesDialog h3{ font-size:22px; }
+}
+</style>
+
+</head>
+<body>
+ 
+<main class="app">
+  <!-- 首頁 -->
+  <section id="home" class="card">
+    <h1>AI-ICT 測驗系統</h1>
+    <div class="stack">
+      <div class="stack">
+        <div class="muted">選擇測驗類型：</div>
+        <div class="stack">
+          <button data-type="B" class="type-btn" id="tB">Eazy（方向 — 面向對應）</button>
+          <button data-type="A" class="type-btn" id="tA">Normal（方向理解、步驟記憶）</button>
+          <button data-type="C" class="type-btn" id="tC">Hard（空間想像、相對思維）</button>
+        </div>
+      </div>
+      <div class="row">
+        <label for="levels" class="muted">本輪題數：</label>
+        <input id="levels" type="number" min="1" max="10" step="1" value="4"/>
+        <span class="muted" id="pickTag">未選擇</span>
+      </div>
+      <button id="startBtn" class="primary" disabled>開始測驗</button>
+    </div>
+  </section>
+
+  <!-- 測驗（單屏） -->
+  <section id="quiz" class="card" style="display:none">
+    <div class="screen">
+      <h1 class="secTitle" id="quizTitle">測驗</h1>
+
+      <div class="topTime">
+        <div class="timeRow">
+          <div>計時：<span id="timeTop">0.00 s</span></div>
+          <div class="tiny">第 <b id="idxNow">1</b> / <span id="idxTotal">-</span> 題</div>
+           <div>分數：<b id="scoreTop">0</b></div> <!-- ★ 新增 -->
+        </div>
+      </div>
+
+      <div class="promptPanel">
+        <div id="stem"></div>
+        <div id="media"></div>
+      </div>
+
+      <div id="choices" class="choices twoCol"></div>
+
+      <div class="bar"><i id="bar"></i></div>
+      <span class="muted" id="msg"></span>
+
+      <div class="row" style="gap:8px">
+        <button id="skipBtn" class="ghost" style="display:none">跳過</button>
+        <button id="nextBtn" class="primary" style="display:none">下一題</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 結果頁：恢復長條圖 + 兩顆按鈕 -->
+ <section id="result" class="card" style="display:none">
+  <h1 style="font-size:24px;margin:0 0 12px;font-weight:800;text-align:center">本輪成績</h1>
+
+  <!-- 超顯眼總分區塊 -->
+  <div id="scoreHighlight"
+       style="margin:4px 0 16px;padding:18px 20px;border-radius:20px;
+              background:#f5f5f5;border:3px solid #4caf50;
+              box-shadow:0 0 0 3px rgba(76,175,80,.25);
+              text-align:center;">
+    <div style="font-size:18px;margin-bottom:4px;letter-spacing:1px;">本輪總分</div>
+    <div id="rtScoreBig"
+         style="font-size:40px;font-weight:900;letter-spacing:3px;line-height:1.1;">
+      0 分
+    </div>
+    <div id="rtPercentBig"
+         style="font-size:26px;font-weight:800;margin-top:4px;">
+      0%
+    </div>
+    <div id="rtPassBig"
+         style="font-size:20px;font-weight:700;margin-top:6px;">
+      —
+    </div>
+  </div>
+
+  <div class="stack">
+    <!-- 詳細數據 -->
+    <div class="row" style="gap:10px;flex-wrap:wrap;font-size:15px;">
+      <span>類型：<b id="rtType">-</b></span>
+      <span>題數：<b id="rtN">-</b></span>
+      <span>正確：<b id="rtOk">-</b></span>
+      <span>平均用時：<b id="rtAvg">-</b></span>
+      <span>總分：<b id="rtScore">-</b></span>
+      <span>通關：<b id="rtPass">-</b></span>
+    </div>
+
+    <div id="barRow" class="barRow" aria-label="每題用時（秒）"></div>
+    <div id="detailList" class="stack"></div>
+
+    <div class="row">
+      <button id="again" class="primary">再來一輪</button>
+      <button id="toHome" class="ghost">回首頁</button>
+    </div>
+  </div>
+    <!-- 🔽 新增：嵌入 easy_controller 網頁的區塊 -->
+  <div id="easyControllerBlock" style="margin-top: 24px;">
+   
+    <div style="
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 12px rgba(0,0,0,0.15);
+    ">
+      <iframe
+        src="https://ffunway.github.io/easy_controller/"
+        style="width: 100%; height: 150px; border: none;"
+        loading="lazy"
+        title="Easy Controller"
+      ></iframe>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+  /* 你的 Firebase 設定 */
+  window.__FIREBASE_CONFIG__ = {
+    apiKey: "AIzaSyDPSYuOV7i3shbdbMwSPmugqMcIAGZbgsU",
+    authDomain: "ai-ict-43133.firebaseapp.com",
+    projectId: "ai-ict-43133",
+    storageBucket: "ai-ict-43133.firebasestorage.app",
+    messagingSenderId: "197902906235",
+    appId: "1:197902906235:web:4b7cf5ebf109f5339983de"
+  };
+  (async function initFirebase(){
+    try{
+      if(!window.__FIREBASE_CONFIG__?.projectId) throw new Error('缺少 Firebase 設定');
+      firebase.initializeApp(window.__FIREBASE_CONFIG__);
+      await firebase.auth().signInAnonymously();
+      window.__FIREBASE_READY__ = true;
+    }catch{ window.__FIREBASE_READY__ = false; }
+  })();
+</script>
+<script>
+  // 1) 首屏圖片：強制 eager + 高優先序（避免「看到空白再慢慢出」）
+  function boostAboveTheFoldImages(){
+    document.querySelectorAll('.q-panel img, .q-figure img').forEach(img=>{
+      img.loading = 'eager';
+      img.fetchPriority = 'high';
+      img.decoding = 'async';
+    });
+  }
+
+  // 2) 其餘圖片：lazy + 低優先序
+  function relaxOffscreenImages(){
+    document.querySelectorAll('img').forEach(img=>{
+      if(!img.closest('.q-panel') && !img.closest('.q-figure')){ // 不在首屏區域
+        img.loading = 'lazy';
+        img.fetchPriority = 'low';
+        img.decoding = 'async';
+      }
+    });
+  }
+
+  // 3) 預抓下一題圖片（若你的資料結構可取到下一題的 URL）
+  async function prefetchNextImages(srcList){
+    if(!Array.isArray(srcList)) return;
+    srcList.slice(0,6).forEach(src=>{
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.as  = 'image';
+      link.href = src;
+      document.head.appendChild(link);
+    });
+  }
+
+  // 你在 render 問題之後呼叫：
+  window.afterRenderQuestion = function(nextImageUrls){
+    boostAboveTheFoldImages();
+    relaxOffscreenImages();
+    prefetchNextImages(nextImageUrls || []);
+  };
+</script>
+
+<script src="engine.js"></script>
+<script src="engine-adapter.js"></script>  <!-- 新增：相容層 -->
+
+<script type="module">
+  const $  = (q, el=document)=>el.querySelector(q);
+  const $$ = (q, el=document)=>[...el.querySelectorAll(q)];
+  const now = () => performance.now();
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+  
+  /* 映射與詞庫 */
+  const WORD2ARROW={
+    UP:'↑',RIGHT:'→',DOWN:'↓',LEFT:'←',CW:'↻',CCW:'↺',
+    '上':'↑','右':'→','下':'↓','左':'←',
+    'up':'↑','right':'→','down':'↓','left':'←','cw':'↻','ccw':'↺'
+  };
+  const FACE_KEYS=['front','right','back','left'];
+  const FACE_LABEL={front:'正面',right:'右側',back:'背面',left:'左側'};
+  const FACE_FROM_ARROW={'↑':'front','→':'right','↓':'back','←':'left'};
+ const VARIANTS = {
+  '↑': ['上','向上','往上','朝上','上方','上面','up'],
+  '→': ['右','向右','往右','朝右','右邊','右側','right'],
+  '↓': ['下','向下','往下','朝下','底下','下面','down'],
+  '←': ['左','向左','往左','朝左','左邊','左側','left'],
+};
+
+ // 基準方向的順序：上→右→下→左
+const DIR4 = "↑→↓←";
+
+// 每個主題是一組 [上, 右, 下, 左]，可自由增減
+const ARROW_THEMES = [
+  ["↑","→","↓","←"], // 經典細線箭頭
+  ["⬆","➡","⬇","⬅"], // 粗線箭頭
+  ["▲","►","▼","◄"], // 實心三角
+  ["△","▷","▽","◁"], // 空心三角
+  ["⮝","⮞","⮟","⮜"], // 長尾箭頭
+  ["▴","▸","▾","◂"], // 小型三角
+  ["⭡","⭢","⭣","⭠"]  // 細長箭頭
+];
+
+const ARROW_STYLE_SETS = ARROW_THEMES.map(([u,r,d,l]) => ({
+  UP: u, RIGHT: r, DOWN: d, LEFT: l
+}));
+const pickTheme = () => ARROW_THEMES[Math.floor(Math.random()*ARROW_THEMES.length)];
+const dirIndex = ch => DIR4.indexOf(ch); // 回傳 0..3（上右下左）
+
+
+// 人物圖片主題：用檔名尾碼切換（'' 表示預設 front.png）
+const FACE_THEME_SUFFIXES = ['', '1', '2', '3', '4', '5'];
+
+// 依主題索引組出 ./img/front[尾碼].png 這種路徑
+function faceImgSrc(faceKey /* 'front'|'right'|'back'|'left' */, themeIdx){
+  const suf = FACE_THEME_SUFFIXES[themeIdx] ?? '';
+  return `./img/${faceKey}${suf}.png`;
+}
+
+
+// 基礎箭頭（內部比對一律用這組）
+const DIR2BASE = { UP:'↑', RIGHT:'→', DOWN:'↓', LEFT:'←' };
+
+// 將所有風格的箭頭 → 方向代號（UP/RIGHT/DOWN/LEFT）
+const GLYPH2DIR = (() => {
+  const m = { '↑':'UP','→':'RIGHT','↓':'DOWN','←':'LEFT' }; // 基礎也納入
+  ARROW_STYLE_SETS.forEach(s => {
+    m[s.UP]    = 'UP';
+    m[s.RIGHT] = 'RIGHT';
+    m[s.DOWN]  = 'DOWN';
+    m[s.LEFT]  = 'LEFT';
+  });
+  return m;
+})();
+
+// 將任意風格的箭頭 → 基礎箭頭（↑→↓←）
+function toBaseArrow(glyph){
+  const dir = GLYPH2DIR[glyph];
+  return DIR2BASE[dir] || glyph;
+}
+
+// 方向字元（你題目的序列通常是這四個）
+const BASE2DIR = { '↑':'UP', '→':'RIGHT', '↓':'DOWN', '←':'LEFT' };
+
+  const randCase = s=>!/[a-z]/i.test(s)?s:(Math.random()<.33?s.toLowerCase():Math.random()<.66?s.toUpperCase():s[0].toUpperCase()+s.slice(1).toLowerCase());
+  const pickVariant = a => randCase(VARIANTS[a]?.[Math.floor(Math.random()*VARIANTS[a].length)] ?? a);
+  const toFace = k=>({front:'front',right:'right',back:'back',left:'left'})[String(k).toLowerCase()]||'front';
+
+  const game = {
+  type: null,
+  N: 4,
+  pool: [],
+  seq: [],
+  i: 0,
+  item: null,
+  t0: 0,
+  timerId: null,
+  responses: [],
+  step: 0,
+  solved: false,
+  // ★ 新增：計分與流程狀態
+  score: 0,
+  wrong: 0,            // 當前題的錯誤次數
+  passMode: 'mustCorrect', // 'mustCorrect'：答對才能前進；'alwaysNext'：對錯都可按「下一題」
+  rules: null          // 目前測驗型別的方案 A 規則
+};
+
+// ★ 方案 A 規則（固定題數 + 基礎分 + 時間加分 + 錯誤上限 + 跳過鍵）
+const SCHEME_A = {
+  // A：Normal（固定 5 題；答對 +12）
+  A: {
+    N: 5,
+    base: 12,
+    timeBonus: [
+      { t: 5,  b: 15 },
+      { t: 15, b: 10 },
+      { t: 20, b: 5 }
+    ],
+    wrongLimitToAutoNext: 3,   // 可錯兩次，第 3 次自動下一題
+    skip: true
+  },
+  // B：Easy（固定 6 題；答對 +10）
+  B: {
+    N: 6,
+    base: 10,
+    timeBonus: [
+      { t: 5,  b: 15 },
+      { t: 10, b: 10 },
+      { t: 20, b: 5 }
+    ],
+    wrongLimitToAutoNext: 3,
+    skip: true
+  },
+  // C：Hard（固定 4 題；答對 +30）
+  C: {
+    N: 4,
+    base: 30,
+    timeBonus: [
+      { t: 10, b: 15 },
+      { t: 20, b: 10 },
+      { t: 30, b: 5 }
+    ],
+    wrongLimitToAutoNext: 2,   // 可錯一次，第 2 次自動下一題
+    skip: true
+  }
+};
+
+// ★ 時間加分計算
+function computeTimeBonus(type, sec) {
+  const r = SCHEME_A[type];
+  if (!r) return 0;
+  for (const { t, b } of r.timeBonus) {
+    if (sec <= t) return b;
+  }
+  return 0;
+}
+
+
+  /* 工具 */
+ function shuffleInPlace(arr){
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+const shuffled = arr => { const a = arr.slice(); shuffleInPlace(a); return a; };
+
+const attachTapFeedback = el =>
+  el.addEventListener(
+    'pointerdown',
+    () => { el.classList.add('tapped'); setTimeout(() => el.classList.remove('tapped'), 140); },
+    { passive: true }
+  );
+
+
+  const ENABLE_VARIANT = false; // ← 先關閉，未來有 /variant 伺服器再打開
+
+  // 只用字元呈現箭頭
+const STEP_TO_ARROW = { UP:'↑', RIGHT:'→', DOWN:'↓', LEFT:'←' };
+
+// 內嵌 SVG 畫出人物（四種朝向）；label 會顯示在角色下方（A/B/C/D）
+function svgChar(direction='UP', label='A'){
+  const rot = {UP:0, RIGHT:90, DOWN:180, LEFT:270}[direction] || 0;
+  const txt = label.toUpperCase();
+  return `
+  <svg viewBox="0 0 120 140" width="100" height="116" aria-label="CHAR_${txt}">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f3f4f6"/><stop offset="1" stop-color="#e5e7eb"/>
+      </linearGradient>
+    </defs>
+    <circle cx="60" cy="30" r="18" fill="url(#g)" stroke="#444" />
+    <rect x="38" y="50" width="44" height="46" rx="8" fill="url(#g)" stroke="#444"/>
+    <g transform="translate(60,63) rotate(${rot})">
+      <!-- 手臂 -->
+      <rect x="-34" y="-4" width="28" height="8" rx="4" fill="#999"/>
+      <rect x="6" y="-4" width="28" height="8" rx="4" fill="#999"/>
+      <!-- 右手指方向箭頭 -->
+      <polygon points="28,0 44,0 44,-8 60,8 44,24 44,16 28,16" fill="#6366f1"/>
+    </g>
+    <text x="60" y="130" text-anchor="middle" font-size="18" fill="#111" font-weight="600">${txt}</text>
+  </svg>`;
+}
+
+
+// ---- 文句變體工具（避免閃爍 + A 題禁符號） ----
+const VARIANT_BASE =
+  (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? `${location.protocol}//${location.hostname}:${location.port || '5530'}` // ← 若你的 dev 埠不是 5520，改成你的
+    : ''; // 發佈到 web.app 後用相對路徑 /variant
+
+function withTimeout(promise, ms=350) {
+  return new Promise(resolve => {
+    const t = setTimeout(()=>resolve(null), ms);
+    promise.then(v=>{ clearTimeout(t); resolve(v); })
+           .catch(()=>{ clearTimeout(t); resolve(null); });
+  });
+}
+
+async function fetchVariantOnce(concept_id, blueprint, difficulty=3) {
+  const url = VARIANT_BASE ? `${VARIANT_BASE}/variant` : '/variant';
+  try {
+    const r = await fetch(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ concept_id, blueprint, difficulty })
+    });
+    if (!r.ok) return null;
+    const { variant } = await r.json();
+    return variant || null;
+  } catch { return null; }
+}
+
+const __origSigOf = window.sigOf;
+window.sigOf = (it) => {
+  const lt = (it?.layout_type || '').toUpperCase();
+  if (['A','A_SCENARIO','B_MATCH','A_MEMORY','C_REVERSE','C'].includes(lt)) {
+    return signature(it);
+  }
+  return __origSigOf ? __origSigOf(it) : signature(it);
+};
+
+
+
+
+
+// A 題：移除任何箭頭符號（←↑↓→↻↺），確保題頭與 tokens 都是詞語
+const ARROW_CHARS = /[←↑↓→↻↺]/g;
+const noArrows = s => (s||'').replace(ARROW_CHARS, '');
+const stripArrowArray = arr => (Array.isArray(arr)?arr:[]).map(noArrows);
+
+  
+  /* 🔗 AI 變體：呼叫 /variant（有回就覆蓋題頭/標籤） */
+  const ARROW_TO_STEP = {'↑':'UP','→':'RIGHT','↓':'DOWN','←':'LEFT','↺':'CCW','↻':'CW'};
+  async function fetchVariant(concept_id, blueprint, difficulty=3){
+    try{
+      const r = await fetch('/variant', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ concept_id, blueprint, difficulty })
+      });
+      if(!r.ok) throw new Error('variant failed');
+      const { variant } = await r.json();
+      return variant || null;
+    }catch(e){ return null; }
+  }
+  function blueprintFromItem(type, item){
+    if(type==='A'){
+      const steps=(item.meta?.seq||[]).map(s=>ARROW_TO_STEP[s]); return { steps };
+    }
+    if(type==='B'){
+      const steps=(item.meta?.seq||[]).map(s=>ARROW_TO_STEP[s]); return { start:'front', steps };
+    }
+    if(type==='C'){
+      const steps=(item.meta?.seq||[]).map(s=>ARROW_TO_STEP[s]);
+      const start=(item.meta?.reference||'front'); return { start, steps };
+    }
+    return {};
+  }
+
+  /* 首頁互動 */
+
+  // 額外：難度對應題數顯示（Easy=6 / Normal=5 / Hard=4），點選時同步帶入
+  (function(){
+    const map = { B: SCHEME_A.B.N, A: SCHEME_A.A.N, C: SCHEME_A.C.N };
+    const label = id => ({tB:'Easy', tA:'Normal', tC:'Hard'}[id] || '');
+    ['tB','tA','tC'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      // 題數徽章已移除（依使用者需求）
+btn.addEventListener('click', () => {
+        const N = map[btn.dataset.type] || 0;
+        const name = label(id);
+        const levels = document.getElementById('levels');
+        const pickTag = document.getElementById('pickTag');
+        if (levels) levels.value = String(N);
+        if (pickTag) pickTag.textContent = `${name}（本輪題數：${N}）`;
+      }, { once:false });
+    });
+  })();
+  const levels=$('#levels'), startBtn=$('#startBtn'), pickTag=$('#pickTag');
+  $$('.type-btn').forEach(b=>b.onclick=()=>{ game.type=b.dataset.type; $$('.type-btn').forEach(x=>x.classList.toggle('active',x===b)); pickTag.textContent='已選：'+game.type; startBtn.disabled=false; });
+  const goto = id => ['home','quiz','result'].forEach(s=>$('#'+s).style.display=(s===id)?'block':'none');
+  $('#again').onclick=()=>goto('home'); $('#toHome').onclick=()=>goto('home');
+
+  startBtn.onclick = async ()=>{
+  try{
+    if (!window.__FIREBASE_READY__) {
+      throw new Error('Firebase 尚未登入（Anonymous）。稍候再試。');
+    }
+    // 方案 A：依測驗型別固定題數
+game.rules = SCHEME_A[game.type];
+game.N = game.rules ? game.rules.N : Math.max(1, Math.min(10, parseInt(levels.value||'4',10)));
+
+// ★ 重置分數
+game.score = 0;
+document.getElementById('scoreTop').textContent = '0';
+
+// ★ 流程模式（展覽時可切換：'mustCorrect' 或 'alwaysNext'）
+game.passMode = 'mustCorrect'; // ← 想改成對錯都可前進就換成 'alwaysNext'
+
+    await prepareRound();
+    $('#idxTotal').textContent = String(game.seq.length);
+    levels.value = String(game.seq.length);
+    $('#quizTitle').textContent = '測驗 ' + game.type;
+    document.getElementById('quiz').dataset.type = game.type;
+    goto('quiz'); nextItem();
+
+    // 跳過鍵：不計分，紀錄 skipped
+document.getElementById('skipBtn').onclick = () => {
+  if (!game.rules?.skip) return;           // ← 改成用 game.rules.skip
+  game.responses.push({ ms: Math.round((now()-game.t0)), correct:false, skipped:true });
+  game.i++; nextItem();
+};
+
+// 『下一題』鍵：只有 flow=free 時顯示；或達到錯誤上限自動啟用
+document.getElementById('nextBtn').onclick = () => {
+  game.i++; nextItem();
+};
+
+  }catch(e){
+    console.error(e);
+    alert('載入題目時發生錯誤：' + (e?.message || e));
+  }
+};
+
+
+  /* 題庫來源（保留） */
+  async function loadFromFirestore(){
+    const db=firebase.firestore();
+    const snap=await db.collection('generated_items').limit(1000).get();
+    return snap.docs.map(d=>({id:d.id,...d.data()}));
+  }
+  async function loadFromLocal(){
+    try{ const res=await fetch('./items-sample.json').then(r=>r.json()); return Array.isArray(res)?res:(res?.items??[]); }catch{ return []; }
+  }
+
+  /* 不足時自動生成（不重複） */
+  function genSeq(maxLen, only4=false){
+    const dirs = only4 ? ['↑','→','↓','←'] : ['↑','→','↓','←','↻','↺'];
+    const len = 1 + Math.floor(Math.random()*Math.min(maxLen,4));
+    return Array.from({length:len},()=>dirs[Math.floor(Math.random()*dirs.length)]);
+  }
+  function makeItem(type){
+    if(type==='A'){ const seq=genSeq(4,false);
+      return { layout_type:'A', meta:{seq}, textTokens:seq.map(pickVariant), options:['↑','→','↓','←','↺','↻'], time_limit:20 };
+    }
+    if(type==='B'){ const seq=genSeq(4,true);
+      return { layout_type:'B', meta:{seq}, options:FACE_KEYS.slice(), time_limit:25 };
+    }
+    if(type==='C'){ const seq=genSeq(4,true), reference=FACE_KEYS[Math.floor(Math.random()*4)];
+      return { layout_type:'C', meta:{seq,reference}, options:FACE_KEYS.slice(), time_limit:25 };
+    }
+    return null;
+  }
+
+  // === A_MEMORY：本地產生器（1~4 步；50% 正/反向） ===
+(function(){
+  const ARROWS = ['↑','→','↓','←'];
+
+  function makeMemoryItem(len){
+    const L = (typeof len==='number' && len>=1 && len<=4) ? len : (1 + Math.floor(Math.random()*4));
+    const seq = Array.from({length:L}, () => ARROWS[Math.floor(Math.random()*4)]);
+    const reverse = Math.random() < 0.5; // 正向/反向 等機率
+    return {
+      layout_type: 'A_MEMORY',
+      time_limit: 0, // 用播放控制，不用倒數
+      stem: reverse
+        ? '請從最後出現的順序，依序點擊相對應的符號。'
+        : '請依照出現的順序，依序點擊相對應的符號。',
+      options: ARROWS.slice(),
+      answer: seq.join(''),  // 備用
+      meta: { seq, reverse, show_ms: 2000 } // 每格顯示 2 秒
+    };
+  }
+
+  // 一次生 N 題
+  window.generateMemoryQueue = function(n){
+    const k = Math.max(1, Number(n||1));
+    return Array.from({length:k}, () => makeMemoryItem());
+  };
+})();
+
+  function normalizeItem(x){
+    const lt=(x.layout_type ?? x.meta?.layout_type ?? x.type ?? '').toString().trim().toUpperCase();
+    const seq0=(x.meta?.seq||x.seq||[]).map(s=>WORD2ARROW[s]||s).slice(0,4);
+    const y={...x, layout_type:lt, meta:{...(x.meta||{}), seq:seq0}};
+   if (lt === 'A') {
+  // 1) 只保留 ↑→↓←
+  const src = (y.meta?.seq || y.textTokens || []);
+  let seq4 = src.filter(ch => DIR4.includes(ch));
+  if (!seq4.length) seq4 = ["↑"]; // 保底
+
+  // 2) 隨機抽一套箭頭主題（與 ARROW_STYLE_SETS 對應）
+  const themeIdx = Math.floor(Math.random() * ARROW_THEMES.length);
+  const themeArr = ARROW_THEMES[themeIdx];     // [上,右,下,左]
+  const themeObj = ARROW_STYLE_SETS[themeIdx]; // {UP,RIGHT,DOWN,LEFT}
+
+ // ❶ 題幹 token 用「文字變體」而不是符號
+y.textTokens = seq4.map(ch => pickVariant(ch));  // 會從你給的詞庫隨機挑：上/向上/往上/...
+
+// ❷ 四個按鈕仍用同一套主題（這樣選項長得漂亮）
+y.options = [themeObj.UP, themeObj.RIGHT, themeObj.DOWN, themeObj.LEFT];
+
+
+  // 5) 寫回 meta 讓後續渲染能抓到
+  y.meta = { ...(y.meta||{}), arrow_theme_idx: themeIdx };
+  y.time_limit = y.time_limit ?? 20;
+
+  return y;
+}
+
+    if(lt==='B'){ if(!seq0.every(s=>'↑→↓←'.includes(s))) y._skip=true; y.options=FACE_KEYS.slice(); y.time_limit=y.time_limit??25; }
+    // 每題存一個樣式索引（0..ARROW_THEMES.length-1）
+
+    if(lt==='C'){ y.options=FACE_KEYS.slice(); y.meta.reference=toFace(y.meta.reference||'front'); y.time_limit=y.time_limit??25; }
+    // 每題存一個樣式索引（0..ARROW_THEMES.length-1）
+
+    if (lt === 'A_MEMORY') {
+  y.options = ['↑','→','↓','←'];
+  y.time_limit = 0; // 播放完才能作答
+  if (!Array.isArray(y.meta?.seq) || y.meta.seq.length === 0) {
+    y.meta = { ...(y.meta || {}), seq: ['↑'], reverse: false, show_ms: 2000 };
+  }
+  return y;
+}
+    if (lt === 'C_REVERSE') {
+  // 題組固定 4 個按鈕（LEFT/RIGHT/UP/DOWN），時限預設 35 秒
+  y.options = ['LEFT','RIGHT','UP','DOWN'];
+  y.time_limit = y.time_limit ?? 35;
+  return y;
+}
+// 若尚未指定 arrow_theme_idx，就隨機補一個（給 B / C 用）
+if (typeof y?.meta?.arrow_theme_idx !== 'number') {
+  y.meta = {
+    ...(y.meta || {}),
+    arrow_theme_idx: Math.floor(Math.random() * ARROW_THEMES.length)
+  };
+}
+
+ return y;   // ←←← 新增這行（關鍵）
+
+  }
+
+  const signature = (it) => {
+  // 防守：空值回保底簽章，避免讀 layout_type 崩潰
+  if (!it || typeof it !== 'object') return 'NULL|' + String(it);
+
+  const lt = (it?.layout_type ? String(it.layout_type) : '').toUpperCase();
+
+  // A_SCENARIO：用 steps_token/reversed/theme
+  if (lt === 'A_SCENARIO') {
+    const ans = Array.isArray(it.answer) ? it.answer : [];
+    const tokens = ans.length ? ans : (Array.isArray(it.meta?.steps_token) ? it.meta.steps_token : []);
+    const rev = it.meta?.reversed ? 1 : 0;
+    const theme = (it.meta?.theme || '').toString();
+    return `A_SCENARIO|${theme}|rev=${rev}|${tokens.join(',')}`;
+  }
+
+  if (lt === 'A_MEMORY') {
+  const seq = Array.isArray(it.meta?.seq) ? it.meta.seq : [];
+  const rev = it.meta?.reverse ? 1 : 0;
+  return `A_MEMORY|rev=${rev}|${seq.join(',')}`;
+}
+
+if (lt === 'A') {
+  const seq = Array.isArray(it.meta?.seq) ? it.meta.seq : [];
+  const theme = (typeof it.meta?.arrow_theme_idx === 'number') ? it.meta.arrow_theme_idx : -1;
+  return `A|theme=${theme}|${seq.join(',')}`;
+}
+
+  // B_MATCH：把 pairs 攤平成一維判斷
+  if (lt === 'B_MATCH') {
+    let flat = [];
+    if (Array.isArray(it.pairs_flat) && it.pairs_flat.length) {
+      flat = it.pairs_flat.map(s => String(s).toUpperCase());
+    } else if (Array.isArray(it.pairs_obj) && it.pairs_obj.length) {
+      flat = it.pairs_obj.flatMap(p => [String(p.arrow||'').toUpperCase(), String(p.face||'').toUpperCase()]);
+    }
+    return `B_MATCH|${flat.join(',')}`;
+  }
+
+  // ✅ C（舊題）：起始面向 + 轉向序列
+  if (lt === 'C') {
+    const ref = (it.meta?.reference || 'front').toString().toLowerCase();
+    const seq = (Array.isArray(it.meta?.seq) ? it.meta.seq : []).map(s => String(s)).join(',');
+    return `C|${ref}|${seq}`;
+  }
+
+  // ✅ C_REVERSE（倒推題）：初末面向 + 步驟（含 UNKNOWN）
+  if (lt === 'C_REVERSE') {
+    const init = (it.meta?.initial_facing || '').toString().toLowerCase();
+    const fin  = (it.meta?.final_facing   || '').toString().toLowerCase();
+    const steps= (Array.isArray(it.meta?.steps_token) ? it.meta.steps_token : []).map(s=>String(s).toUpperCase()).join(',');
+    return `C_REVERSE|${init}->${fin}|${steps}`;
+  }
+
+  // 其他題型：用已有 sig4 / item_id / id 當作保底
+  return it?.meta?.sig4 || it?.item_id || it?.id || (lt + '|' + (it.stem||''));
+};
+
+
+async function prepareRound(){
+  game.seq.length = 0; game.i = 0; game.responses = []; game.step = 0;
+
+  const need = Math.max(1, Math.min(10, parseInt(levels.value || '4', 10)));
+  const type = game.type; // 'A' | 'B' | 'C' | 'A_TF'
+  const db = firebase.firestore();
+
+  async function pick(layout, n){
+  if (!n || n <= 0) return [];          // 避免 limit(0)
+
+  const col = db.collection('generated_items');
+  const r = Math.random();
+  try {
+    // 需要複合索引：layout_type == + orderBy(meta.rand)
+    let snaps = [];
+    const s1 = await col.where('layout_type','==',layout)
+      .orderBy('meta.rand').startAt(r).limit(n).get();
+    snaps.push(...s1.docs);
+    if (snaps.length < n) {
+      const s2 = await col.where('layout_type','==',layout)
+        .orderBy('meta.rand').limit(n - snaps.length).get();
+      snaps.push(...s2.docs);
+    }
+    return snaps.map(d => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    console.warn('[pick:fallback] 無索引或查詢失敗，改用備援。', layout, e?.message||e);
+    // 備援：只 where，不 orderBy（抓多一點再本機洗牌）
+    const s = await col.where('layout_type','==',layout).limit(Math.max(1, n*3)).get();
+    const arr = s.docs.map(d => ({ id: d.id, ...d.data() }));
+    shuffleInPlace(arr);
+    return arr.slice(0, n);
+  }
+}
+
+// === A：混合原有題型 + 記憶題（A_MEMORY） ===
+if (type === 'A') {
+  const need = Math.max(1, Math.min(10, parseInt(levels.value || '4', 10)));
+
+  // 配比：記憶題 50%（可調），其餘用原 A 題型們補滿
+  const nMem = Math.max(1, Math.floor(need * 0.5));
+  const nRest = Math.max(0, need - nMem);
+
+  // 1) 原 A 題型（你既有的 A / A_TF / A_SCENARIO 邏輯）
+  const nA   = Math.max(0, Math.round(nRest * 0.5));
+  const nTF  = Math.max(0, Math.round(nRest * 0.3));
+  const nSCE = Math.max(0, nRest - nA - nTF);
+
+  const aDocs    = await pick('A',          nA);
+  const atfDocs  = await pick('A_TF',       nTF);
+  const asceDocs = await pick('A_SCENARIO', nSCE);
+
+  // 2) 記憶題（本地產生）
+  const memoryItems = window.generateMemoryQueue(nMem).map(normalizeItem);
+
+  // 3) 合併→去重→不足再補→洗牌→取 need
+  let merged = [...aDocs, ...atfDocs, ...asceDocs, ...memoryItems];
+  let unique = window.dedupBySig( merged.filter(Boolean) );
+
+  if (unique.length < need) {
+    const moreA   = await pick('A',          Math.ceil(need/2));
+    const moreTF  = await pick('A_TF',       Math.ceil(need/2));
+    const moreSCE = await pick('A_SCENARIO', Math.ceil(need/2));
+    unique = window.dedupBySig([...unique, ...moreA, ...moreTF, ...moreSCE]);
+  }
+
+  // 可選：保證至少 1 題情境題
+  if (!unique.some(x => (x.layout_type||'').toUpperCase()==='A_SCENARIO')) {
+    const one = await pick('A_SCENARIO', 1);
+    if (one?.length) unique = window.dedupBySig([...unique, ...one]);
+  }
+
+  // 洗牌→取 need
+  for (let i = unique.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unique[i], unique[j]] = [unique[j], unique[i]];
+  }
+  game.seq = unique.slice(0, need).map(normalizeItem);
+  game.usedSigs = new Set(game.seq.map(window.sigOf));
+  document.getElementById('idxTotal').textContent = String(game.seq.length);
+  levels.value = String(game.seq.length);
+  return;
+}
+
+
+ // === B：混合舊 B（箭頭→面向） + B_MATCH（連連看） ===
+else if (type === 'B') {
+  const need = game.N;
+
+  // 配比：舊 B 60% / B_MATCH 40%
+  const nOld   = Math.max(1, Math.round(need * 0.6));
+  const nMatch = Math.max(1, Math.round(need * 0.4));
+
+  // 先各自抓一批
+  const bOld   = await pick('B',        nOld);
+  const bMatch = await pick('B_MATCH',  nMatch);
+
+  // 合併→去重
+ let merged = [...bOld, ...bMatch];
+let unique = window.dedupBySig( merged.filter(Boolean) );
+
+  // 不足再補一輪
+  if (unique.length < need) {
+    const moreOld   = await pick('B',        Math.ceil(need/2));
+    const moreMatch = await pick('B_MATCH',  Math.ceil(need/2));
+    merged = [...unique, ...moreOld, ...moreMatch];
+    unique = window.dedupBySig(merged);
+  }
+
+  // 保底：至少 1 題 B_MATCH
+  if (!unique.some(x => (x.layout_type || '').toUpperCase() === 'B_MATCH')) {
+    const one = await pick('B_MATCH', 1);
+    if (one?.length) unique = window.dedupBySig([...unique, ...one]);
+  }
+
+  // 洗牌→取 need
+  for (let i = unique.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unique[i], unique[j]] = [unique[j], unique[i]];
+  }
+  game.seq = unique.slice(0, need).map(normalizeItem);
+  game.usedSigs = new Set(game.seq.map(window.sigOf));
+  document.getElementById('idxTotal').textContent = String(game.seq.length);
+  levels.value = String(game.seq.length);
+  return;
+}
+
+// === C：混合「舊 C（本地生成）」與「C_REVERSE（Firestore）」 ===
+else if (type === 'C') {
+  const need = Math.max(1, Math.min(10, parseInt(levels.value || '4', 10)));
+
+  // 配比可調：舊 C 60% + 倒推 40%
+  const nLegacy = Math.max(1, Math.round(need * 0.6));
+  const nRev    = Math.max(1, need - nLegacy);
+
+  // 1) 先抓倒推題（generated_items）
+  const revDocs = await pick('C_REVERSE', nRev);
+
+  // 2) 本地產舊 C 題（engine.js 提供）
+  const startDiff = 3;
+  const { items: leg, difficulties } = window.generateSessionQueue('C', nLegacy, startDiff);
+  // 轉成畫面期望的資料格式
+  const legacyItems = (leg || []).map(q => ({
+    layout_type: 'C',
+    time_limit: 25,
+    // 題幹可簡單說明：起始面向 + 步數
+    stem: `起始面向：${({front:'正面',right:'右側',back:'背面',left:'左側'})[q.blueprint.start]||'正面'}。共有 ${q.blueprint.steps.length} 個轉向。`,
+    meta: {
+      reference: q.blueprint.start,                         // 起始面向（front/right/back/left）
+      seq: q.blueprint.steps.map(s => ({UP:'↑',RIGHT:'→',DOWN:'↓',LEFT:'←'}[s]||s)) // 顯示箭頭
+    },
+    options: ['front','right','back','left'],              // 四個面向圖按鈕
+    answer: q.answer                                       // 正解（front/right/back/left）
+  }));
+
+  // 3) 合併→去重→保證至少 1 題倒推
+  let merged = [...revDocs, ...legacyItems];
+  let unique = window.dedupBySig( merged.filter(Boolean) );
+
+  if (!unique.some(x => (x.layout_type||'').toUpperCase()==='C_REVERSE')) {
+    const one = await pick('C_REVERSE', 1);
+    if (one?.length) unique = window.dedupBySig([...unique, ...one]);
+  }
+
+  // 4) 洗牌→取 need
+  for (let i = unique.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [unique[i], unique[j]] = [unique[j], unique[i]];
+  }
+  game.seq = unique.slice(0, need).map(normalizeItem);
+  game.usedSigs = new Set(game.seq.map(window.sigOf));
+  document.getElementById('idxTotal').textContent = String(game.seq.length);
+  levels.value = String(game.seq.length);
+  return;
+}
+
+
+
+
+  // === 單純玩是非題（如果你有 A_TF 獨立入口）===
+  if (type === 'A_TF') {
+    const snap = await db.collection('generated_items')
+      .where('layout_type','==','A_TF')
+      .orderBy('meta.rand').limit(need).get();
+    const items = snap.docs.map(d=>d.data());
+    game.seq = window.dedupBySig(items).slice(0, need).map(normalizeItem);
+    game.usedSigs = new Set(game.seq.map(window.sigOf));
+    document.getElementById('idxTotal').textContent = String(game.seq.length);
+    levels.value = String(game.seq.length);
+    return;
+  }
+}
+// ★ 統一處理作答結果
+function handleOutcome(ok, sec) {
+  const r = game.rules || SCHEME_A[game.type];
+  const nextBtn = document.getElementById('nextBtn');
+
+  if (ok) {
+    const gain = (r?.base || 0) + computeTimeBonus(game.type, sec);
+    game.score += gain;
+    game.responses.push({ ms: Math.round(sec * 1000), correct: true, gain });
+    document.getElementById('scoreTop').textContent = String(game.score);
+    game.solved = true;
+
+    // mustCorrect：自動前進；alwaysNext：顯示「下一題」改手動前進（避免人潮同時移動造成塞住）
+    if (game.passMode === 'mustCorrect') {
+      setTimeout(() => { game.i++; nextItem(); }, 550);
+    } else {
+      nextBtn.style.display = '';
+    }
+  } else {
+    // 錯誤：計次，不加分
+    game.wrong++;
+    game.responses.push({ ms: Math.round(sec * 1000), correct: false, gain: 0 });
+
+    // alwaysNext：錯了也能手動按「下一題」
+    if (game.passMode === 'alwaysNext') {
+      nextBtn.style.display = '';
+    }
+
+    // 錯誤達上限則自動下一題（避免卡關）
+    if (r && game.wrong >= r.wrongLimitToAutoNext) {
+      const m = document.getElementById('msg');
+      m.textContent = '達到錯誤上限，自動進到下一題';
+      m.style.color = 'var(--bad)';
+      game.solved = true;
+      setTimeout(() => { game.i++; nextItem(); }, 420);
+    }
+  }
+}
+
+
+  /* 每關計時（秒） */
+  function startTimer(){
+    clearInterval(game.timerId);
+    game.t0 = now(); $('#bar').style.width='0%';
+    const limit = Math.max(1, Number(game.item?.time_limit)||15);
+    const MAX_IDLE = 90; // 90秒未作答自動下一題
+    game.timerId = setInterval(()=>{
+      const sec=(now()-game.t0)/1000;
+      $('#timeTop').textContent = sec.toFixed(2)+'s';
+      $('#bar').style.width = Math.min(100,(sec/limit)*100)+'%';
+      if(!game.solved && sec >= MAX_IDLE){
+        clearInterval(game.timerId);
+        // 記錄為未答對、0分，並自動前往下一題
+        game.responses.push({ ms: Math.round(sec*1000), correct: false, gain: 0, skipped: true });
+        game.solved = true;
+        setTimeout(()=>{ game.i++; nextItem(); }, 200);
+      }
+    }, 100);
+  }
+
+  function flashAllChoicesBad(){ $$('.choice').forEach(el=>el.classList.add('bad')); setTimeout(()=>$$('.choice').forEach(el=>el.classList.remove('bad')), 320); }
+  function createFaceImg(key){ const img=new Image(); img.className='face'; img.alt=key; img.src=`./img/${key}.png`; return img; }
+
+  async function nextItem(){
+  clearInterval(game.timerId);
+  $('#msg').textContent='';
+  if(game.i>=game.seq.length) return showResult();
+  game.item=game.seq[game.i];
+  $('#idxNow').textContent=String(game.i+1);
+  // ★ 第 8 點：出新題時重設錯誤次數、按鈕狀態
+  game.wrong = 0;
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('skipBtn').style.display = (game.rules?.skip ? '' : 'none');
+  game.step=0; game.solved=false;
+  await renderItem(game.item);   // ← 先等內容產生（含 AI 變體），避免閃跳
+  startTimer();
+}
+function setMsg(text, status){ // status: 'ok' | 'bad' | ''
+  const m = document.getElementById('msg');
+  m.textContent = text || '';
+  m.classList.remove('msg--ok','msg--bad');
+  if(status==='ok') m.classList.add('msg--ok');
+  if(status==='bad') m.classList.add('msg--bad');
+}
+async function renderItem(item){
+  const stem=$('#stem'), media=$('#media'), choices=$('#choices');
+  stem.innerHTML=''; media.innerHTML=''; choices.innerHTML='';
+  // 預設取消 grid2；各題型若是 4 顆選項再開
+  choices.classList.remove('grid2');
+
+
+  if (!item || typeof item !== 'object') {   // 保險
+    console.warn('空題目，略過 idx=', game.i, item);
+    game.i++; return nextItem();
+  }
+  const type=(item.layout_type||'').toUpperCase();
+  
+const root = document.getElementById('quiz');   // 新增
+root?.classList.remove('ox-layout');            // 先移除，避免殘留影響其它題
+
+  // ✅ 各題型共用的收尾函式
+  function finish(ok) {
+    const sec = (now() - game.t0) / 1000;
+    $('#timeTop').textContent = sec.toFixed(2) + 's';
+
+    if (ok) {
+      setMsg('✔ 正確', 'ok');
+      $$('.choice').forEach(el => el.classList.add('ok')); // 統一給視覺回饋
+    } else {
+      setMsg('✖ 再試一次', 'bad');
+    }
+
+    // 統一計分／是否顯示「下一題」／錯誤上限自動前進…等流程
+    handleOutcome(ok, sec);
+  }
+
+  
+ // === A_TF（是非題 ○/⨉） ===
+if (type === 'A_TF') {
+  const stem = document.getElementById('stem');
+  const media = document.getElementById('media');
+  const choices = document.getElementById('choices');
+
+  const text = item.stem || '請判斷文字方向與符號是否相符';
+  stem.textContent = text;
+  media.innerHTML = '';
+
+   // 1) 先決定正確答案
+  const answer = (item.answer === '○' || item.answer === '⨉')
+    ? item.answer
+    : (item?.meta?.is_match ? '○' : '⨉');
+
+  // 2) 準備選項（若無 options 就給 ['○','⨉']）
+  const baseOpts = (Array.isArray(item.options) && item.options.includes('○'))
+    ? item.options : ['○','⨉'];
+
+  // 3) 打亂順序（每題 ○ / ⨉ 位置都不同）
+  const opts = baseOpts.slice().sort(() => Math.random() - 0.5);
+
+// 在 renderItem() 的 OX 題分支
+const root = document.querySelector('#quiz');
+root.classList.add('ox-layout');    // ✅ 只在 OX 題加到 #quiz
+
+  for (const op of opts) {
+    const btn = document.createElement('button');
+    btn.className = 'choice big';
+    btn.innerHTML = `<span class="symbol">${op}</span>`;
+    attachTapFeedback(btn);
+    btn.onclick = ()=>{
+      if (game.solved) return;
+      const ok = (op === answer);
+      if (ok) finish(true);
+      else { btn.classList.add('bad'); setTimeout(()=>btn.classList.remove('bad'),420); finish(false); }
+    };
+    choices.appendChild(btn);
+  }
+  return;
+}
+
+
+if (type === 'A_SCENARIO') {
+  const meta = item.meta || {};
+  const title = meta.title || '情境任務';
+  const reversed = !!meta.reversed; // 若是反向步驟
+  const conclusion = meta.conclusion || '任務完成！你成功通過了這次挑戰！';
+
+  // 題幹（如果有 item.stem 就用，否則給預設）
+  const context = (item.stem && typeof item.stem === 'string')
+    ? item.stem
+    : '請根據以下情境，依序完成動作。';
+
+  // 期望步驟：用 item.answer（陣列：UP/RIGHT/DOWN/LEFT）轉成符號
+  const STEP_TO_ARROW = { UP:'↑', RIGHT:'→', DOWN:'↓', LEFT:'←' };
+  const expectedArrows = (Array.isArray(item.answer) ? item.answer : []).map(t => STEP_TO_ARROW[t] || '↑');
+  game.expected = expectedArrows.slice();
+  game.step = 0;
+
+  /* ===== 情境卡 UI ===== */
+  const card = document.createElement('div'); card.className = 'sceneCard';
+  const t = document.createElement('div'); t.className = 'sceneTitle'; t.textContent = `📘 ${title}`;
+  card.appendChild(t);
+  if (reversed) {
+    const b = document.createElement('span'); b.className = 'sceneBadge';
+    b.textContent = '反向操作（由後往前）';
+    t.appendChild(b);
+  }
+  const p = document.createElement('div'); p.className = 'sceneText'; p.textContent = context;
+  card.appendChild(p);
+  const hint = document.createElement('div'); hint.className = 'sceneHint';
+  hint.textContent = reversed ? '提示：請從最後一步開始，往回依序輸入指令。' : '提示：請依序輸入正確的方向指令。';
+  card.appendChild(hint);
+  stem.appendChild(card);
+
+  // 可選：根據 meta.theme 改變情境卡配色
+const theme = (meta.theme || '').toLowerCase();
+if (theme === 'fantasy') {
+  card.style.borderColor = '#d8b4fe';
+  card.style.boxShadow = '0 3px 10px rgba(192, 132, 252, 0.2)';
+}
+else if (theme === 'sci') {
+  card.style.borderColor = '#38bdf8';
+  card.style.boxShadow = '0 3px 10px rgba(56, 189, 248, 0.2)';
+}
+else if (theme === 'real') {
+  card.style.borderColor = '#86efac';
+  card.style.boxShadow = '0 3px 10px rgba(134, 239, 172, 0.2)';
+}
+
+
+  /* ===== 四方向按鈕（隨機順序）===== */
+  const ops = (item.options && item.options.length === 4 ? item.options : ['UP','RIGHT','DOWN','LEFT'])
+              .map(t => STEP_TO_ARROW[t]).sort(()=>Math.random()-0.5);
+choices.classList.add('grid2');
+  for (const glyph of ops) {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.innerHTML = `<div class="glyph">${glyph}</div>`;
+    attachTapFeedback(btn);
+    btn.onclick = () => {
+      if (game.solved) return;
+      const need = game.expected[game.step];
+      if (glyph === need) {
+        // 單步正確：顯示進度提示，不跳 alert
+        game.step++;
+       setMsg(`✔ 正確！繼續下一步 (${game.step}/${game.expected.length})`, 'ok');
+
+        if (game.step === game.expected.length) {
+          finish(true);
+          $('#msg').textContent = conclusion; // 完成→底部顯示結語
+          $('#msg').style.color = 'var(--ok)';
+        }
+      } else {
+        // 錯誤：不洩漏答案
+        flashAllChoicesBad();
+        setMsg('✖ 錯誤，再試一次！','bad');
+        finish(false);
+      }
+    };
+    choices.appendChild(btn);
+  }
+}
+
+
+
+else if(type==='A'){
+    const stepsArrows = (item.meta?.seq ?? []);
+    const blueprint = { steps: stepsArrows.map(a => ({'↑':'UP','→':'RIGHT','↓':'DOWN','←':'LEFT','↺':'CCW','↻':'CW'}[a])) };
+
+    // 等最多 350ms 拿變體；拿不到就用預設（一次渲染，避免閃跳）
+    const ai = ENABLE_VARIANT
+  ? await withTimeout(fetchVariantOnce("A_TEXT→ARROWS", blueprint, game.currDifficulty||3), 350)
+  : null;
+    const wording = noArrows(ai?.wording) || '請依序點擊對應的符號';
+    // 題幹用文字變體（避免任何箭頭符號）
+const tokens =
+  (ai?.tokens && ai.tokens.length === stepsArrows.length)
+    ? stripArrowArray(ai.tokens)                     // AI 回來的先過「去箭頭」保險
+    : stepsArrows.map(ch => pickVariant(ch));        // 否則就用本地詞庫隨機挑
+
+
+    const tip=document.createElement('div'); tip.className='muted'; tip.textContent=wording;
+    stem.appendChild(tip);
+
+    const wrap=document.createElement('div'); wrap.className='tokens';
+    tokens.forEach((w,i)=>{ const s=document.createElement('span'); s.className='tok'; s.textContent=w;s.classList.add('arrow-token','arrow');   // ★新增：吃到 --arrow-font
+ s.dataset.idx=i; wrap.appendChild(s); });
+    media.appendChild(wrap);
+
+    const theme = ARROW_STYLE_SETS[item.meta.arrow_theme_idx % ARROW_STYLE_SETS.length];
+    const ops = shuffled(item.options ?? [theme.UP, theme.RIGHT, theme.DOWN, theme.LEFT]);
+    game.expected=stepsArrows.slice();
+
+    if ((item.options?.length || 0) === 4) choices.classList.add('grid2');
+
+    for(const op of ops){
+      const btn=document.createElement('button'); btn.className='choice';
+      btn.innerHTML=`<div class="glyph">${op}</div>`;
+      attachTapFeedback(btn);
+      btn.onclick=()=>{
+  if(game.solved) return;
+  const need = game.expected[game.step];  // 基礎箭頭（↑→↓←）
+  const pick = toBaseArrow(op);           // ⬆/▲/⮝/↑ → 還原成 ↑
+  if(pick === need){
+    wrap.querySelector(`.tok[data-idx="${game.step}"]`)?.classList.add('done');
+    game.step++; if(game.step===game.expected.length) finish(true);
+  }else{
+    $$('.choice').forEach(el=>el.classList.add('bad'));
+    setTimeout(()=>$$('.choice').forEach(el=>el.classList.remove('bad')), 320);
+    wrap.querySelectorAll('.tok').forEach(s=>{ s.classList.remove('done'); s.classList.add('err'); });
+    setTimeout(()=>wrap.querySelectorAll('.tok').forEach(s=>s.classList.remove('err')),300);
+    game.step=0; finish(false);
+  }
+};
+      choices.appendChild(btn);
+    }
+  }
+
+
+ /* ===== A_MEMORY：記憶題（每步 2 秒，播完才能作答；錯誤重播） ===== */
+else if (type === 'A_MEMORY') {
+  const seq = Array.isArray(item.meta?.seq) ? item.meta.seq.slice() : [];
+  const reverse = !!item.meta?.reverse;
+  const showMs = Math.max(500, Number(item.meta?.show_ms || 2000)); // 每步顯示毫秒
+  const ARROWS = ['↑','→','↓','←'];
+  const EXPECT = reverse ? seq.slice().reverse() : seq.slice();
+  // 用詞庫把箭頭轉成中文/英文變體文字（一次生成，整題一致）
+const seqText = seq.map(ch => pickVariant(ch));
+
+
+  // 標題 & 模式徽章（放大）
+  const title = document.createElement('div');
+  title.className = 'muted memPrompt';
+  const badge = document.createElement('span');
+  badge.className = 'memBadge';
+  badge.textContent = reverse ? '反向記憶' : '正向記憶';
+  title.textContent = (item.stem && typeof item.stem==='string') ? item.stem : (reverse?'從最後一個開始輸入':'依出現順序輸入');
+  title.appendChild(badge);
+  stem.appendChild(title);
+
+  // 顯示單一大符號：直接用 .arTok，與 A 題一致
+  const tok = document.createElement('span');
+  tok.className = 'arTok';
+  tok.style.visibility = 'hidden';
+  media.appendChild(tok);
+
+  // 四個按鈕（播放期間禁用）；每顆按鈕內也用 .arTok 呈現箭頭，確保尺寸一致
+ const order = shuffled(ARROWS);choices.classList.add('grid2');       // ← 每一題進來時隨機排列
+  for (const g of order) {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.classList.add('arrow-option','arrow'); // ★新增
+    btn.disabled = true; // 播放時鎖住
+    // 用 .arTok 包住符號，外觀與 A 題相同
+    const glyph = document.createElement('div');
+    glyph.className = 'glyph';
+    glyph.classList.add('arrow');              // 讓 glyph 也吃到箭頭字型
+    glyph.textContent = g;
+    btn.appendChild(glyph);
+
+    attachTapFeedback(btn);
+    btn.onclick = () => {
+      if (btn.disabled || game.solved) return; // 播放中點擊不算
+      user.push(g);
+      // 檢查目前前綴
+      for (let i=0;i<user.length;i++){
+        if (user[i] !== EXPECT[i]) {
+          btn.classList.add('bad'); setTimeout(()=>btn.classList.remove('bad'), 420);
+          setMsg('再看一次！','bad');
+          disableAll(true);
+          user = [];
+          setTimeout(playSequence, 600); // 錯了就重播
+          finish(false); // 記錄錯誤，不跳下一題
+          return;
+        }
+      }
+      // 全部正確
+      if (user.length === EXPECT.length) {
+       setMsg('做得好！','ok');
+        finish(true); // 進下一題
+      }
+    };
+    choices.appendChild(btn);
+  }
+
+  // 控制：播放 & enable/disable
+  let user = [];
+  function disableAll(flag){
+    Array.from(choices.querySelectorAll('button.choice')).forEach(b => b.disabled = !!flag);
+  }
+  function playSequence(){
+    user = [];
+    disableAll(true);
+    setMsg('請觀看記憶序列…','');
+    let i = 0;
+    const step = () => {
+      if (i >= seq.length) {
+        tok.style.visibility = 'hidden';
+        disableAll(false);           // 播完才能作答
+        setMsg('請作答','');
+        return;
+      }
+      tok.textContent = seqText[i];  // e.g. 向上 / 右邊 / Down ...
+      tok.style.visibility = 'visible';
+      setTimeout(() => {
+        tok.style.visibility = 'hidden';
+        i++;
+        setTimeout(step, 180);       // 步與步之間的間隔
+      }, showMs);                    // 每步顯示（預設 2000ms）
+    };
+    setTimeout(step, 200);
+  }
+  playSequence();
+  return;
+}
+
+ else if (type === 'B_MATCH') {
+  const charThemeIdx = (typeof item.meta?.char_theme_idx === 'number')
+  ? item.meta.char_theme_idx
+  : (item.meta.char_theme_idx = Math.floor(Math.random() * FACE_THEME_SUFFIXES.length));
+  // ===== 題幹 =====
+  const tip = document.createElement('div');
+  tip.className = 'muted';
+  tip.style.whiteSpace = 'pre-line';
+  tip.textContent = (item.stem && typeof item.stem==='string')
+    ? item.stem
+    : '請將每個箭頭符號配對到對應的人物圖片。';
+  stem.appendChild(tip);
+
+  // ===== 固定對應與標籤 =====
+  const ARROW_TO_FACE = { UP:'front', RIGHT:'right', DOWN:'back', LEFT:'left' };
+  const FACE_LABEL = { front:'向前', right:'向右', back:'向後', left:'向左' };
+  const STEP_TO_ARROW = { UP:'↑', RIGHT:'→', DOWN:'↓', LEFT:'←' };
+
+  // ===== 讀取正解「允許的面向」：題幹可指定 require_faces；否則全面向都算 =====
+  const REQ_FACES = Array.isArray(item.meta?.require_faces) && item.meta.require_faces.length
+    ? new Set(item.meta.require_faces.map(s => String(s)))
+    : null; // null 代表全部面向都允許
+
+  // ===== 題目提供的配對線索：pairs（可無，僅用來推導角色顯示方向）=====
+  const requiredPairsRaw = (() => {
+    if (Array.isArray(item.pairs_obj) && item.pairs_obj.length) {
+      return item.pairs_obj.map(p => [String(p.a).toUpperCase(), String(p.c).toUpperCase()]);
+    }
+    if (Array.isArray(item.pairs_flat) && item.pairs_flat.length) {
+      return item.pairs_flat.map(s => {
+        const [a,c] = String(s).toUpperCase().split('-'); return [a,c];
+      });
+    }
+    if (Array.isArray(item.pairs) && item.pairs.length) {
+      return item.pairs.map(p => [String(p[0]).toUpperCase(), String(p[1]).toUpperCase()]);
+    }
+    return []; // 沒有的話由畫面實際出現的按鍵來決定可配對數
+  })();
+
+  // ===== 畫面上的按鍵：從資料決定（保持你現有來源）=====
+  const arrowsAll = ['UP','DOWN','LEFT','RIGHT'];
+  const charsAll  = ['CHAR_A','CHAR_B','CHAR_C','CHAR_D'];
+choices.classList.add('grid2');
+  // 題目實際要顯示的按鍵：先取題目的 options，如沒有就 fallback 全部
+  const opts = Array.isArray(item.options) && item.options.length
+    ? item.options.map(String)
+    : [...arrowsAll, ...charsAll];
+
+  // 分出要顯示的箭頭與角色（保留順序，可含重複；最多 8、最少 2 的限制由出題端控制）
+  const arrowButtons = opts.filter(t => arrowsAll.includes(t));
+  const charButtons  = opts.filter(t => charsAll.includes(t));
+
+  // ===== 決定每個角色要顯示的面向圖（優先用 meta.char_map；否則依 pairs 推導；再不行隨機）=====
+  function deriveCharMapFromPairs(pairs){
+    const map = {};
+    for (const [arrow, ch] of pairs) {
+      const f = ARROW_TO_FACE[arrow];
+      if (f) map[ch] = f;
+    }
+    const ALLF = ['front','right','back','left'];
+    for (const ch of charsAll) {
+      if (!map[ch]) map[ch] = ALLF[Math.floor(Math.random()*ALLF.length)];
+    }
+    return map;
+  }
+  const charMap = (item.meta?.char_map && typeof item.meta.char_map === 'object')
+    ? item.meta.char_map
+    : deriveCharMapFromPairs(requiredPairsRaw);
+
+  // ===== 計算每個面向的「可用數量」：箭頭數與圖片數（多重集合匹配）=====
+  const countArrowsByFace = { front:0, right:0, back:0, left:0 };
+  const countCharsByFace  = { front:0, right:0, back:0, left:0 };
+
+  arrowButtons.forEach(a => { const f = ARROW_TO_FACE[a]; if (f) countArrowsByFace[f]++; });
+  charButtons.forEach(c => { const f = charMap[c]; if (f) countCharsByFace[f]++; });
+
+  // 允許的面向集合
+  const facesAllowed = REQ_FACES ? REQ_FACES : new Set(['front','right','back','left']);
+
+  // 目標配對數：對每個允許面向取 min(箭頭數, 圖片數) 加總
+  let targetPairs = 0;
+  for (const f of facesAllowed) {
+    targetPairs += Math.min(countArrowsByFace[f]||0, countCharsByFace[f]||0);
+  }
+ 
+  // ===== UI：右側列表顯示進度 =====
+  const grid = document.createElement('div');
+  grid.className = 'match-grid';
+  media.appendChild(grid);
+
+  // 建立按鈕並可見化
+  const btns = [];
+  function makeArrowBtn(tk){
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.classList.add('arrow-option','arrow');   // ★新增
+    b.dataset.kind = 'ARROW';
+    b.dataset.token = tk;
+    b.innerHTML = `<div class="glyph">${STEP_TO_ARROW[tk] || ''}</div>`;
+    attachTapFeedback(b);
+    choices.appendChild(b);
+    btns.push(b);
+  }
+  function makeCharBtn(ck){
+    const faceKey = String(charMap[ck] || 'front'); // front/right/back/left
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.dataset.kind = 'CHAR';
+    b.dataset.token = ck;
+
+    const img = new Image();
+    img.className = 'face';
+    img.alt = FACE_LABEL[faceKey] || faceKey;
+    img.src = faceImgSrc(faceKey, charThemeIdx);
+    img.onerror = () => { img.onerror = null; img.src = `./img/${faceKey}.png`; };
+    const cap = document.createElement('div');
+    cap.className = 'muted';
+    cap.textContent = FACE_LABEL[faceKey] || faceKey;
+
+    b.appendChild(img);
+    b.appendChild(cap);
+    attachTapFeedback(b);
+    choices.appendChild(b);
+    btns.push(b);
+  }
+
+  arrowButtons.forEach(makeArrowBtn);
+  charButtons.forEach(makeCharBtn);
+
+  // ===== 互動邏輯（多重集合匹配）=====
+  const madePairs = []; // 只記錄成功的次數（[arrow, char] 可重複面向但每顆按鈕只能用一次）
+  let pending = null;   // {kind:'ARROW'|'CHAR', token, el}
+
+  function renderPairsBadge(){
+    grid.innerHTML = '';
+    const header = document.createElement('div');
+    header.className = 'muted';
+    header.textContent = `已配對：${madePairs.length} 組 / 目標 ${targetPairs} 組`;
+    grid.appendChild(header);
+    madePairs.forEach(([a,c])=>{
+      const row = document.createElement('div');
+      row.className = 'pairrow';
+      row.textContent = `${STEP_TO_ARROW[a]}  ⇄  ${FACE_LABEL[charMap[c]] || charMap[c]} (${c})`;
+      grid.appendChild(row);
+    });
+  }
+  renderPairsBadge();
+
+  // 工具
+  const isDisabled = el => el.disabled || el.classList.contains('used');
+  const consume = el => { el.classList.add('used'); el.disabled = true; };
+  const mark = (el,cls)=>{ el.classList.add(cls); setTimeout(()=>el.classList.remove(cls), 250); };
+  function errorFlash(){ flashAllChoicesBad(); }
+
+  function tryFinish(){
+  if (madePairs.length >= targetPairs) {
+    const conclusion = item.meta?.conclusion || '配對成功，你真是眼力高手！';
+    finish(true);
+    // 覆蓋 finish(true) 預設的「✔ 正確」，顯示自訂結語
+    $('#msg').textContent = conclusion;
+    $('#msg').style.color = 'var(--ok)';
+  }
+}
+
+  btns.forEach(btn=>{
+  btn.onclick = ()=>{
+    if (game.solved || isDisabled(btn)) return;
+    const kind = btn.dataset.kind;   // 'ARROW' or 'CHAR'
+    const token = btn.dataset.token;
+
+    // 第一下：記住候選
+    if (!pending) {
+      pending = { kind, token, el: btn };
+      btn.classList.add('active');
+      return;
+    }
+
+    // 第二下：必須異類（符號→人物）才有機會成立；否則直接錯誤
+    if (pending.kind === kind || isDisabled(pending.el)) {
+      pending.el?.classList.remove('active');
+      pending = null;
+      errorFlash(); finish(false); mark(btn,'bad');
+      return;
+    }
+
+    // 先把第一顆保留下來（避免待會找錯人）
+    const prev = pending;               // ← 關鍵：保留第一顆
+    // 強制順序為 [ARROW, CHAR]，並且也抓到對應的兩個 element
+    const arrowTk = (prev.kind === 'ARROW') ? prev.token : token;
+    const charTk  = (prev.kind === 'CHAR')  ? prev.token : token;
+    const arrowEl = (prev.kind === 'ARROW') ? prev.el    : btn;
+    const charEl  = (prev.kind === 'CHAR')  ? prev.el    : btn;
+
+    // 清掉 active 樣式與 pending
+    prev.el?.classList.remove('active');
+    pending = null;
+
+    // 驗證：面向要一致，且在允許集合內
+    const faceA = ARROW_TO_FACE[arrowTk];
+    const faceC = charMap[charTk];
+    const allowed = !REQ_FACES || REQ_FACES.has(faceA);
+    const ok = allowed && faceA && faceC && faceA === faceC;
+
+    if (!ok) {
+      errorFlash(); finish(false); mark(btn,'bad');
+      return;
+    }
+
+   // 成功：只消耗「剛剛這兩顆」
+consume(arrowEl);
+consume(charEl);
+
+madePairs.push([arrowTk, charTk]);
+mark(btn,'good');
+$('#msg').textContent = '配對正確，繼續連線！';
+$('#msg').style.color = 'var(--ok)';
+renderPairsBadge();
+tryFinish();
+
+  };
+});
+
+}
+
+
+
+  else if(type==='B'){
+    const seq=item.meta?.seq ?? [];
+    const themeArr = ARROW_THEMES[item.meta.arrow_theme_idx % ARROW_THEMES.length] || ARROW_THEMES[0];
+    const blueprint = { start:'front', steps: seq.map(a => ({'↑':'UP','→':'RIGHT','↓':'DOWN','←':'LEFT'}[a])) };
+
+    // 先等變體（題頭/標籤），一次渲染
+    const ai = ENABLE_VARIANT
+  ? await withTimeout(fetchVariantOnce("B_ARROWS→FACING(front)", blueprint, game.currDifficulty||3), 350)
+  : null;
+    const wording = ai?.wording || item.question?.wording || '依序點擊人物面向（上=正面、右=右側、下=背面、左=左側）';
+    const labels  = ai?.option_labels || item.ui?.option_labels || { front:'正面', right:'右側', back:'背面', left:'左側' };
+
+    const charThemeIdx = (typeof item.meta?.char_theme_idx === 'number')
+  ? item.meta.char_theme_idx
+  : (item.meta.char_theme_idx = Math.floor(Math.random() * FACE_THEME_SUFFIXES.length));
+
+    const tip=document.createElement('div'); tip.className='muted'; tip.textContent=wording;
+    stem.appendChild(tip);
+
+    const wrap=document.createElement('div'); wrap.className='arrows';
+    seq.forEach((a,i)=>{ const e=document.createElement('span'); e.className='arTok'; e.textContent = themeArr[dirIndex(a)]; e.dataset.idx=i; wrap.appendChild(e); });
+    media.appendChild(wrap);
+
+    const faces  = item.optionFaces || null;
+    const order  = shuffled(item.options ?? ['front','right','back','left']);
+    game.expected = seq.map(a => ({'↑':'front','→':'right','↓':'back','←':'left'}[a]));
+    choices.classList.add('grid2');
+
+    for(const key of order){
+      const btn=document.createElement('button'); btn.className='choice';
+      const img=new Image(); img.className='face'; img.alt=key;img.src = faces?.[key] || faceImgSrc(key, charThemeIdx);
+      img.onerror = () => { img.onerror = null; img.src = `./img/${key}.png`; }; // 後備
+      const cap=document.createElement('div'); cap.className='muted'; cap.textContent = labels[key] || key;
+      btn.appendChild(img); btn.appendChild(cap);
+      attachTapFeedback(btn);
+      btn.onclick=()=>{
+        if(game.solved) return;
+        const need=game.expected[game.step];
+        if(key===need){
+          wrap.querySelector(`.arTok[data-idx="${game.step}"]`)?.classList.add('done');
+          game.step++; if(game.step===game.expected.length) finish(true);
+        }else{
+          $$('.choice').forEach(el=>el.classList.add('bad'));
+          setTimeout(()=>$$('.choice').forEach(el=>el.classList.remove('bad')), 320);
+          wrap.querySelectorAll('.arTok').forEach(s=>{ s.classList.remove('done'); s.classList.add('err'); });
+          setTimeout(()=>wrap.querySelectorAll('.arTok').forEach(s=>s.classList.remove('err')),300);
+          game.step=0; finish(false);
+        }
+      };
+      choices.appendChild(btn);
+    }
+  }
+
+  else if(type==='C'){
+    const ref=(item.meta?.reference || 'front');
+    const seq=item.meta?.seq ?? [];
+    const themeArr = ARROW_THEMES[item.meta.arrow_theme_idx % ARROW_THEMES.length] || ARROW_THEMES[0];
+    const blueprint = { start: ref, steps: seq.map(a => ({'↑':'UP','→':'RIGHT','↓':'DOWN','←':'LEFT'}[a])) };
+
+    const ai = ENABLE_VARIANT
+  ? await withTimeout(fetchVariantOnce("C_START+ARROWS→FINAL_FACING", blueprint, game.currDifficulty||3), 350)
+  : null;
+    const wording = ai?.wording || (item.question && item.question.wording) || '從起始面向出發，依序執行箭頭後，選出最終面向';
+    const charThemeIdx = (typeof item.meta?.char_theme_idx === 'number')
+  ? item.meta.char_theme_idx
+  : (item.meta.char_theme_idx = Math.floor(Math.random() * FACE_THEME_SUFFIXES.length));
+
+
+    const tip=document.createElement('div'); tip.className='muted'; tip.textContent=wording;
+    stem.appendChild(tip);
+
+    const row=document.createElement('div'); row.className='mediaRow';
+    const startImg=new Image(); startImg.className='face'; startImg.alt=ref; startImg.src=faceImgSrc(ref, charThemeIdx);
+    startImg.onerror = () => { startImg.onerror = null; startImg.src = `./img/${ref}.png`; };
+    row.appendChild(startImg);
+    const arr=document.createElement('div'); arr.className='arrows';
+    seq.forEach(a=>{ const e=document.createElement('span'); e.className='arTok';e.textContent = themeArr[dirIndex(a)];
+  arr.appendChild(e); });
+    row.appendChild(arr); media.appendChild(row);
+
+    const faces=['front','right','back','left']; let idx=faces.indexOf(ref);
+    const turn=a=>{ if(a==='→') idx=(idx+1+4)%4; else if(a==='←') idx=(idx-1+4)%4; else if(a==='↓') idx=(idx+2)%4; };
+    seq.forEach(turn); const finalFace=faces[idx];
+
+    const ops=shuffled(item.options ?? faces);choices.classList.add('grid2');
+
+    for(const key of ops){
+      const btn=document.createElement('button'); btn.className='choice';
+      const img=new Image(); img.className='face'; img.alt=key; img.src=faceImgSrc(key, charThemeIdx);
+      img.onerror = () => { img.onerror = null; img.src = `./img/${key}.png`; };
+      const cap=document.createElement('div'); cap.className='muted'; cap.textContent={front:'正面',right:'右側',back:'背面',left:'左側'}[key]||key;
+      btn.appendChild(img); btn.appendChild(cap);
+      attachTapFeedback(btn);
+      btn.onclick=()=>{
+        if(game.solved) return;
+        const ok = key===finalFace;
+        if(ok) finish(true); else { btn.classList.add('bad'); setTimeout(()=>btn.classList.remove('bad'),420); finish(false); }
+      };
+      choices.appendChild(btn);
+    }
+  }
+else if (type === 'C_REVERSE') {
+  const charThemeIdx = (typeof item.meta?.char_theme_idx === 'number')
+  ? item.meta.char_theme_idx
+  : (item.meta.char_theme_idx = Math.floor(Math.random() * FACE_THEME_SUFFIXES.length));
+  // 1) 題幹 + 問題
+  const question = (item?.meta?.wording?.question) || '請問遺失的轉向為何？';
+  const answer   = String(item.answer || '').toUpperCase();  // 'LEFT'|'RIGHT'|'UP'|'DOWN'
+  const stemText = (item.stem && typeof item.stem==='string') ? item.stem : '請依情境找出遺失的轉向。';
+
+  // === 標籤：把舊字眼標準化（含「往前轉」→「向前轉」）===
+let labels = (item?.meta?.wording?.labels) || { LEFT:'向左轉', RIGHT:'向右轉', UP:'向前轉', DOWN:'向後轉' };
+const norm = s => (s||'')
+  .replace(/不轉|往前轉/g, '向前轉')
+  .replace(/迴轉/g, '向後轉');
+
+// === 步驟列文字：必要時重建，並套用正規化 ===
+const tok2zh = t => ({LEFT:'向左轉', RIGHT:'向右轉', UP:'向前轉', DOWN:'向後轉', UNKNOWN:'？'}[t] || '？');
+const stepsTok = Array.isArray(item.meta?.steps_token) ? item.meta.steps_token.map(x=>String(x).toUpperCase()) : [];
+const zhSteps0 = Array.isArray(item?.meta?.wording?.zh_steps) ? item.meta.wording.zh_steps : [];
+const needRebuild = zhSteps0.length !== stepsTok.length;
+const zhSteps = (needRebuild ? stepsTok.map(tok2zh) : zhSteps0).map(norm);
+
+  const tip = document.createElement('div');
+  tip.className='muted'; tip.style.whiteSpace='pre-line';
+  tip.textContent = stemText + '\n' + question;
+  stem.appendChild(tip);
+
+  const wrap = document.createElement('div'); wrap.className='arrows';
+  zhSteps.forEach(s => {
+    const e=document.createElement('span');
+    e.className='arTok' + (s==='？'?' missing':'');
+    e.textContent=s;
+    wrap.appendChild(e);
+  });
+  media.appendChild(wrap);
+
+  // 2) 用你的人像圖示（LEFT→left、RIGHT→right、UP→front、DOWN→back）
+  const TURN_TO_FACE = { LEFT:'left', RIGHT:'right', UP:'front', DOWN:'back' };
+  const order = ['LEFT','RIGHT','UP','DOWN'].sort(()=>Math.random()-0.5);choices.classList.add('grid2');
+
+  for (const key of order) {
+    const btn = document.createElement('button'); btn.className='choice';
+    const img = new Image();
+    img.className = 'face';
+    img.src = faceImgSrc(TURN_TO_FACE[key], charThemeIdx);
+    img.onerror = () => { img.onerror = null; img.src = `./img/${TURN_TO_FACE[key]}.png`; }; // 後備
+    const cap = document.createElement('div'); cap.className='muted'; cap.textContent = labels[key];
+    btn.appendChild(img); btn.appendChild(cap);
+    attachTapFeedback(btn);
+    btn.onclick = () => { if(game.solved) return; (key===answer) ? finish(true) : (btn.classList.add('bad'), setTimeout(()=>btn.classList.remove('bad'),420), finish(false)); };
+    choices.appendChild(btn);
+  }
+  return;
+}
+
+
+}
+
+function showResult(){
+  // 停止計時，切到結果頁
+  clearInterval(game.timerId);
+  goto('result');
+
+  // ---- 基本統計 ----
+  const r = SCHEME_A[game.type] || null;
+  const correctList = game.responses.filter(x => x && x.correct === true);
+  const decidedList = game.responses.filter(
+    x => x && (x.correct === true || x.skipped === true)
+  );
+
+  // 題數上限：以規則設定為主，其次是實際題目數
+  const N = (r && r.N) ? r.N : (game.seq && game.seq.length ? game.seq.length : decidedList.length);
+  const perItem = decidedList.slice(0, N);
+  const sec = perItem.map(x => (x.ms || 0) / 1000);
+  const avg = sec.length ? (sec.reduce((a, b) => a + b, 0) / sec.length) : 0;
+
+  // ---- 畫面填值（基本資訊）----
+  $('#rtType').textContent = game.type || '-';
+  $('#rtN').textContent    = String(N);
+  $('#rtOk').textContent   = String(correctList.length);
+  $('#rtAvg').textContent  = avg ? avg.toFixed(2) + ' 秒' : '-';
+
+  // ---- 總分與通關（依照本輪實際得分計算）----
+  // 先用目前「得分 / 理論最高分」換算百分比，再決定是否通關
+  let pct = 0;
+  let passed = false;
+  if (r) {
+    // 最高分 = 題數 × (base + 該型別最快時間加分)
+    const bestTimeBonus = (r.timeBonus && r.timeBonus[0] && r.timeBonus[0].b) ? r.timeBonus[0].b : 0;
+    const maxScore = N * ((r.base || 0) + bestTimeBonus);
+    pct = maxScore > 0 ? Math.round((game.score / maxScore) * 100) : 0;
+    if (pct < 0) pct = 0;
+    if (pct > 999) pct = 999;
+    passed = pct >= 70; // 70% 以上算通關
+  }
+
+  // ---- 結果畫面：超顯眼總分區塊 ----
+  const rtScoreEl   = document.getElementById('rtScore');
+  const rtPassEl    = document.getElementById('rtPass');
+  const scoreBig    = document.getElementById('rtScoreBig');
+  const passBig     = document.getElementById('rtPassBig');
+  const pctBig      = document.getElementById('rtPercentBig');
+  const scoreBox    = document.getElementById('scoreHighlight');
+  const barRow      = document.getElementById('barRow');
+  const detailList  = document.getElementById('detailList');
+
+  // 小字版（原本列在一排的那個）
+  if (rtScoreEl) {
+    rtScoreEl.textContent = `${game.score} 分（${pct}%）`;
+    rtScoreEl.style.fontSize = '22px';
+    rtScoreEl.style.fontWeight = '700';
+  }
+
+  if (rtPassEl) {
+    rtPassEl.textContent = passed ? '通關' : '未通關';
+    rtPassEl.style.fontSize = '22px';
+    rtPassEl.style.fontWeight = '700';
+    rtPassEl.style.color = passed ? '#2e7d32' : '#c62828';
+  }
+
+  // 大字版（最顯眼的那塊）
+  if (scoreBig) {
+    scoreBig.textContent = `${game.score} 分`;
+  }
+  if (pctBig) {
+    pctBig.textContent = `${pct}%`;
+  }
+  if (passBig) {
+    passBig.textContent = passed ? '✅ 通關成功' : '❌ 尚未通關';
+    passBig.style.color = passed ? '#2e7d32' : '#c62828';
+  }
+
+  if (scoreBox) {
+    scoreBox.style.background = passed ? '#e8f5e9' : '#ffebee';
+    scoreBox.style.borderColor = passed ? '#2e7d32' : '#c62828';
+    scoreBox.style.boxShadow = passed
+      ? '0 0 0 3px rgba(46,125,50,.25)'
+      : '0 0 0 3px rgba(198,40,40,.25)';
+  }
+
+  // ---- 繪製每題用時圖表（直條圖）----
+  if (barRow) {
+    barRow.innerHTML = '';
+    if (sec.length) {
+      const max = Math.max(...sec, 1);
+      sec.forEach((s, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'mbar';
+
+        const bar = document.createElement('i');
+        const val = document.createElement('span');
+        val.className = 'val';
+        val.textContent = s.toFixed(1);
+
+        const lab = document.createElement('span');
+        lab.className = 'lab';
+        lab.textContent = String(idx + 1);
+
+        wrap.appendChild(bar);
+        wrap.appendChild(val);
+        wrap.appendChild(lab);
+        barRow.appendChild(wrap);
+
+        // 動畫：從 0 長到實際高度
+        requestAnimationFrame(() => {
+          bar.style.height = (s / max * 100).toFixed(1) + '%';
+        });
+      });
+    }
+  }
+
+  // ---- 詳細列表（每題狀態）----
+  if (detailList) {
+    detailList.innerHTML = '';
+    if (perItem.length) {
+      perItem.forEach((rec, idx) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.style.justifyContent = 'space-between';
+        row.style.fontSize = '14px';
+
+        const left = document.createElement('span');
+        left.textContent = `第 ${idx + 1} 題`;
+
+        const mid = document.createElement('span');
+        let status = '';
+        if (rec.skipped) status = '跳過';
+        else if (rec.correct) status = '答對';
+        else status = '答錯';
+        mid.textContent = status;
+
+        const usedSec = (rec.ms || 0) / 1000;
+        const gain = (typeof rec.gain === 'number') ? rec.gain : 0;
+        const right = document.createElement('span');
+        right.textContent = `${usedSec.toFixed(2)} 秒｜${gain >= 0 ? '+' + gain : gain} 分`;
+
+        row.appendChild(left);
+        row.appendChild(mid);
+        row.appendChild(right);
+        detailList.appendChild(row);
+      });
+    }
+  }
+}
+
+  // 啟動
+  goto('home');
+
+// ====== [Rules Dialog Patch] ======
+(function(){
+  // Build dialog once
+  if (!document.getElementById('rulesDialog')) {
+    const style = document.createElement('style');
+    style.textContent = `
+#rulesDialog{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.25);z-index:9999}
+#rulesDialog.show{display:flex}
+#rulesDialog .card, #rulesDialog .rules-card{
+  background:#F7F1E6 !important;
+  border:1px solid #E8DFD5 !important;
+  box-shadow:0 12px 28px rgba(0,0,0,.08) !important;
+  margin:0 auto !important;
+  font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif !important;
+}
+
+#rulesDialog h3{font-size:28px;margin:0 0 12px 0;font-weight:900;font-family: var(--title-font);letter-spacing:.5px}
+#rulesDialog .k{ color:#D96B3B !important; font-weight:800 !important; }
+#rulesDialog .ok{color:var(--ok-600);font-weight:700}
+#rulesDialog .bad{color:var(--bad-600);font-weight:700}
+#rulesDialog .box h4{margin:.1rem 0 .4rem 0;font-size:16px;color:var(--muted);font-weight:700}
+#rulesDialog ul{padding-left:1.05rem}
+#rulesDialog .grid{display:grid;grid-template-columns:1fr;gap:14px}
+#rulesDialog .box{background:var(--tint);border:1px solid var(--tint-line);border-radius:12px;padding:16px 18px}
+#rulesDialog .btns{display:flex;gap:12px;justify-content:flex-end;margin-top:14px}
+@media (min-width:720px){
+  #rulesDialog .grid{grid-template-columns:1fr 1fr}
+}
+    `;
+    document.head.appendChild(style);
+    const wrap = document.createElement('div');
+    wrap.id = 'rulesDialog';
+    wrap.innerHTML = `
+      <div class="card" role="dialog" aria-modal="true" aria-labelledby="ruleTitle">
+        <h3 id="ruleTitle">測驗說明</h3>
+        <div class="grid">
+          <div class="box">
+            <div id="ruleScore"></div>
+            <div id="ruleWrong"></div>
+            <div id="ruleCount"></div>
+          </div>
+          <div class="box">
+            <div id="rulePass"></div>
+            <div>
+              <div style="font-weight:700;margin:.2rem 0 .3rem">時間加分</div>
+              <ul id="ruleTime" style="margin:.2rem 0 .4rem .9rem"></ul>
+            </div>
+            <div id="ruleNotes" style="opacity:.85"></div>
+          </div>
+        </div>
+        <div class="btns">
+          <button id="ruleCancel" class="ghost">返回</button>
+          <button id="ruleOk" class="primary">OK，開始測驗</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+  }
+
+  function secs(r){ return r.timeBonus?.map(x=>x.t).sort((a,b)=>a-b) || []; }
+  function timeBonusHTML(r){
+    return (r.timeBonus||[]).map(x=>`<li>⏱️ ${x.t} 秒內：<b>+${x.b} 分</b></li>`).join('');
+  }
+  function fillRules(){
+    const typeMap = {A:'B（Normal）',B:'A（Easy）',C:'C（Hard）'}; // 我們顯示中文而已
+    const r = SCHEME_A[game.type];
+    const bestBonus = Math.max(...(r.timeBonus||[]).map(x=>x.b), 0);
+    const maxScore = (r.base + bestBonus) * r.N;
+    document.getElementById('ruleTitle').textContent = `測驗 ${game.type} 說明`;
+    document.getElementById('ruleScore').innerHTML = `每題配分：<b>答對 +${r.base} 分；答錯 +0 分</b>`;
+    document.getElementById('ruleWrong').innerHTML = `⚠️ <span class="k">錯誤上限</span>：每題可錯 <b>${r.wrongLimitToAutoNext-1} 次</b>（第 <b>${r.wrongLimitToAutoNext}</b> 次自動下一題）`;
+    document.getElementById('ruleCount').innerHTML = `🔢 <span class="k">本輪題數</span>：<b>${r.N} 題</b>`;
+    document.getElementById('rulePass').innerHTML = `🎯 <span class="k">通關條件</span>：最終分 = (本次得分 / 最高可得分) × 100；通關門檻 <b>≥ 70</b>；最高可得分 <b>${maxScore}</b> 分`;
+    document.getElementById('ruleTime').innerHTML = timeBonusHTML(r);
+    document.getElementById('ruleNotes').innerHTML = `📝 <span class="k">備註</span>：跳過鍵可使用（不計分）；單題 90 秒未作答自動下一題。`;
+  }
+
+  function openRulesThenStart(realStart){
+    const dlg = document.getElementById('rulesDialog');
+    fillRules();
+    dlg.classList.add('show');
+    const onCancel = (e)=>{ e.preventDefault(); dlg.classList.remove('show'); };
+    const onOk = async (e)=>{
+      e.preventDefault();
+      dlg.classList.remove('show');
+      // 延遲一個 task，避免視覺卡頓
+      setTimeout(()=>{ realStart?.(); }, 10);
+    };
+    document.getElementById('ruleCancel').onclick = onCancel;
+    document.getElementById('ruleOk').onclick = onOk;
+  }
+
+  // 1) 保存原本的開始流程
+  const __ORIGINAL_START__ = startBtn.onclick;
+  // 2) 攔截「開始測驗」：先開小卡，再開始
+  startBtn.onclick = ()=> openRulesThenStart(__ORIGINAL_START__);
+})();
+// ====== [End Rules Dialog Patch] ======
+</script>
+
+
+<!-- AI-ICT patch: rules dialog pretty fill & OK wiring -->
+<script id="aiict-rules-script">
+(function(){
+  function currentModeKey(){
+    if (window.game && window.game.type) return String(window.game.type).toUpperCase();
+    var a = document.querySelector('.type-btn.active[data-type]');
+    if (a) return String(a.getAttribute('data-type')).toUpperCase();
+    var r = document.querySelector('[data-mode].active, [data-mode].selected');
+    if (r) return String(r.getAttribute('data-mode')||r.dataset.mode).toUpperCase();
+    return 'B';
+  }
+  // Local rules mirror (kept consistent with your logic)
+  var RULES = {
+    B:{name:'Easy',   count:6, base:10, wrongLimit:2, timeBonus:[{sec:5,b:15},{sec:10,b:10},{sec:20,b:5}], max:150, pass:70},
+    A:{name:'Normal', count:5, base:12, wrongLimit:2, timeBonus:[{sec:5,b:15},{sec:15,b:10},{sec:20,b:5}], max:135, pass:70},
+    C:{name:'Hard',   count:4, base:30, wrongLimit:1, timeBonus:[{sec:10,b:15},{sec:20,b:10},{sec:30,b:5}], max:180, pass:70}
+  };
+  function timeHtml(r){
+    return r.timeBonus.map(function(t){ return '⏱️ ' + t.sec + ' 秒內：<b>+' + t.b + '</b> 分'; }).join('<br>');
+  }
+  function prettyFill(){
+    var key = currentModeKey();
+    var r = RULES[key] || RULES.B;
+    var dlg = document.getElementById('rulesDialog') || document.querySelector('dialog.rules');
+    if(!dlg) return;
+    function $(sel){ return dlg.querySelector(sel); }
+    var title = $('#rule-title') || dlg.querySelector('[data-rule="title"]');
+    var score = $('#rule-score') || dlg.querySelector('[data-rule="score"]');
+    var err   = $('#rule-err')   || dlg.querySelector('[data-rule="err"]');
+    var cnt   = $('#rule-count') || dlg.querySelector('[data-rule="count"]');
+    var pass  = $('#rule-pass')  || dlg.querySelector('[data-rule="pass"]');
+    var time  = $('#rule-time')  || dlg.querySelector('[data-rule="time"]');
+    var note  = $('#rule-note')  || dlg.querySelector('[data-rule="note"]');
+    if(title) title.textContent = '測驗 ' + key + ' 說明';
+    if(score) score.innerHTML = '🧮 <span class="k">每題配分</span>：答對 +' + r.base + ' 分；答錯 +0 分';
+    if(err)   err.innerHTML   = '⚠️ <span class="k">錯誤上限</span>：每題可錯 ' + r.wrongLimit + ' 次（第 ' + (r.wrongLimit+1) + ' 次自動下一題）';
+    if(cnt)   cnt.innerHTML   = '🔢 <span class="k">本輪題數</span>：' + r.count + ' 題';
+    if(pass)  pass.innerHTML  = '🎯 <span class="k">通關條件</span>：最終分 =（本次得分 / 最高可得分）× 100；門檻 ≥ '
+                              + r.pass + '；最高可得分 <b>' + r.max + '</b> 分';
+    if(time)  time.innerHTML  = timeHtml(r);
+    if(note)  note.innerHTML  = '📝 <span class="k">備註</span>：可用跳過鍵（不計分）；單題逾 <b>90 秒</b> 自動下一題';
+    // button classes for style
+    var ok = dlg.querySelector('#rule-ok, button[type="submit"]'); if(ok){ ok.classList.add('btn-ok'); }
+    var cancel = dlg.querySelector('#rule-cancel, [data-action="rule-cancel"]'); if(cancel){ cancel.classList.add('btn-cancel'); }
+  }
+  // Intercept start button to ensure prettyFill runs right before dialog opens
+  document.addEventListener('DOMContentLoaded', function(){
+    var startBtn = document.getElementById('startBtn') || document.querySelector('[data-action="start"]');
+    if(startBtn){
+      startBtn.addEventListener('click', function(){
+        setTimeout(prettyFill, 0);
+      }, true);
+    }
+  });
+  window.__AICT_prettyFillRules = prettyFill;
+})();
+</script>
+
+
+<script>
+(function(){
+  const dlg = document.getElementById('rulesDialog');
+  if(!dlg) return;
+  function wrapScoreTitle(){
+    try{
+      const walker = document.createTreeWalker(dlg, NodeFilter.SHOW_TEXT, null);
+      const nodes = [];
+      while(true){
+        const n = walker.nextNode(); if(!n) break;
+        if(n.nodeValue && n.nodeValue.includes('每題配分')) nodes.push(n);
+      }
+      nodes.forEach(n=>{
+        const t = n.nodeValue;
+        const idx = t.indexOf('每題配分'); if(idx<0) return;
+        const p = n.parentNode;
+        const before = document.createTextNode(t.slice(0,idx));
+        const span = document.createElement('span'); span.className='k'; span.textContent='每題配分';
+        const after = document.createTextNode(t.slice(idx+4));
+        p.replaceChild(after, n);
+        p.insertBefore(span, after);
+        p.insertBefore(before, span);
+      });
+    }catch(e){}
+  }
+  const obs = new MutationObserver(()=>{
+    if(dlg.classList.contains('show')) wrapScoreTitle();
+  });
+  obs.observe(dlg, {attributes:true, childList:true, subtree:true});
+  if(dlg.classList.contains('show')) wrapScoreTitle();
+})();
+</script>
+
+
+<script>
+// 同步「超顯眼總分區塊」的大字與百分比
+(function(){
+  const scoreNode   = document.getElementById('rtScore');
+  const passNode    = document.getElementById('rtPass');
+  const scoreBig    = document.getElementById('rtScoreBig');
+  const percentBig  = document.getElementById('rtPercentBig');
+  const passBig     = document.getElementById('rtPassBig');
+
+  if(!scoreNode || !scoreBig) return;
+
+  function syncResultHighlight(){
+    try{
+      const txt = (scoreNode.textContent || '').trim();
+      if(txt){
+        // 解析「180 分 (100%)」這種格式
+        const m = txt.match(/(\d+)\s*分(?:\s*\((\d+)%\))?/);
+        if(m){
+          const score = m[1];
+          const pct   = m[2];
+          scoreBig.textContent = score + ' 分';
+          if(percentBig){
+            if(pct) percentBig.textContent = pct + '%';
+            else    percentBig.textContent = '';
+          }
+        }else{
+          // 不符合格式就直接塞原字串
+          scoreBig.textContent = txt;
+          if(percentBig) percentBig.textContent = '';
+        }
+      }
+      if(passNode && passBig){
+        const pt = (passNode.textContent || '').trim();
+        if(pt) passBig.textContent = pt;
+      }
+    }catch(e){}
+  }
+
+  // 載入後以及之後每次成績更新時都同步
+  window.addEventListener('load', syncResultHighlight);
+  const obs = new MutationObserver(syncResultHighlight);
+  obs.observe(scoreNode, {childList:true, characterData:true, subtree:true});
+  if(passNode){
+    obs.observe(passNode, {childList:true, characterData:true, subtree:true});
+  }
+})();
+</script>
+
+</body>
+</html>
