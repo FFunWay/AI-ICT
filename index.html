@@ -1544,9 +1544,7 @@ button.primary:not(:disabled):active{
             };
             
             localStorage.setItem('ble_command', JSON.stringify(commandPayload));
-            
             console.log('已傳送指令:', commandPayload);
-            alert('指令已送出: ' + cmd);
         }
 
         document.getElementById('sendBee').onclick = () => {
