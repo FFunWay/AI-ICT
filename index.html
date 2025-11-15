@@ -1534,7 +1534,18 @@ button.primary:not(:disabled):active{
       overflow: hidden;
       box-shadow: 0 0 12px rgba(0,0,0,0.15);
     ">
-      
+    <script>
+        function sendCommand(cmd, data = null) {
+            const commandPayload = {
+                cmd: cmd,
+                data: data,
+                timestamp: new Date().getTime() 
+            };
+            
+            localStorage.setItem('ble_command', JSON.stringify(commandPayload));
+            console.log('已傳送指令:', commandPayload);
+        }
+    </script>
     </div>
   </div>
 </section>
@@ -3180,10 +3191,7 @@ function showResult(){
     // EASY 模式：不計分，但一律視為通關
     pct = 100;
     passed = true;
-    if (typeof window.playsystem === 'function') {
-      window.playsystem('bee');
-      console.log('bee case to playsystem');
-    }
+    sendCommand('bee');
   } else if (r) {
     // 最高分 = 題數 × (base + 該型別最快時間加分)
     const bestTimeBonus = (r.timeBonus && r.timeBonus[0] && r.timeBonus[0].b) ? r.timeBonus[0].b : 0;
@@ -3193,7 +3201,13 @@ function showResult(){
     if (pct > 999) pct = 999;
     passed = pct >= 70; // 70% 以上算通關
   }
-
+  if (pct >= 85) {
+    sendCommand('bee');
+  } else if (pct >= 70) {
+    sendCommand('haha');
+  } else {
+    sendCommand('fail');
+  }
 
 // ---- 結果畫面：超顯眼總分區塊 ----
   const rtScoreEl   = document.getElementById('rtScore');
