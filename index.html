@@ -1534,6 +1534,7 @@ button.primary:not(:disabled):active{
       overflow: hidden;
       box-shadow: 0 0 12px rgba(0,0,0,0.15);
     ">
+      
     </div>
   </div>
 </section>
@@ -3179,6 +3180,10 @@ function showResult(){
     // EASY 模式：不計分，但一律視為通關
     pct = 100;
     passed = true;
+    if (typeof window.playsystem === 'function') {
+      window.playsystem('bee');
+      console.log('bee case to playsystem');
+    }
   } else if (r) {
     // 最高分 = 題數 × (base + 該型別最快時間加分)
     const bestTimeBonus = (r.timeBonus && r.timeBonus[0] && r.timeBonus[0].b) ? r.timeBonus[0].b : 0;
