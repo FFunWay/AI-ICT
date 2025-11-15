@@ -382,7 +382,7 @@ button.primary:disabled{
 @media (min-width: 900px){
   .app{
     max-width: 960px;
-    margin: 0 auto;
+    margin:  auto;
     padding-block: 48px;
   }
   #home.card, #quiz.card, #result.card{
@@ -394,7 +394,7 @@ button.primary:disabled{
 @media (min-width: 1200px){
   .app{
     max-width: 1200px;
-    margin: 0 auto;
+    margin: auto;
     padding-block: 56px;     /* 上下留白更大 */
   }
   #home.card{
@@ -543,7 +543,7 @@ button.primary:disabled{
 #quiz .tokens{ gap: 8px; }
 #quiz .tok{ padding: 6px 10px; font-size: clamp(16px, 4.2vw, 20px); }
 #quiz .arrows{ gap: 8px; }
-#quiz .arTok{ font-size: clamp(20px, 6vw, 28px); padding: 4px 8px; }
+#quiz .arTok{ font-size: clamp(45px, 6vw, 28px); padding: 12px 24px; }
 
 /* 計時條更薄一點，少占高度 */
 #quiz .bar{ height: 10px; }
@@ -1327,7 +1327,7 @@ button.primary:not(:disabled):active{
   background:#F7F1E6 !important;
   border:1px solid #E8DFD5 !important;
   box-shadow:0 12px 28px rgba(0,0,0,.08) !important;
-  margin: auto !important;
+  margin:auto !important;
   font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif !important;
 }
 
@@ -1355,7 +1355,7 @@ button.primary:not(:disabled):active{
   justify-content: center !important;
   background: rgba(0,0,0,.45) !important; /* 灰色滿版 */
   z-index: 2147483000 !important;         /* 高層級，確保覆蓋全畫面 */
-  margin: 0 !important; padding: 24px !important;
+  margin:auto !important; padding: 24px !important;
 }
 #rulesDialog.show{ display:flex !important; }
 #rulesDialog, #rulesDialog *{
@@ -1363,7 +1363,7 @@ button.primary:not(:disabled):active{
 }
 /* 卡片置中 + 陰影 */
 #rulesDialog .card, #rulesDialog .rules-card{
-  margin: auto !important;
+  margin:  auto !important;
   width: min(960px, 94vw) !important;
   max-height: min(88vh, 900px) !important;
   background: #F7F1E6 !important;
@@ -1393,7 +1393,7 @@ button.primary:not(:disabled):active{
 /* hide numeric badges next to mode cards */
 .mode-badge, .badgeN, .modeCount { display:none !important; }
 /* dialog base */
-#rulesDialog {border: none; padding: 0; }
+#rulesDialog { border: none; padding: 0; }
 #rulesDialog::backdrop { background: rgba(0,0,0,.45); }
 /* card */
 #rulesDialog .card, #rulesDialog .rules-card{
