@@ -543,7 +543,7 @@ button.primary:disabled{
 #quiz .tokens{ gap: 8px; }
 #quiz .tok{ padding: 6px 10px; font-size: clamp(16px, 4.2vw, 20px); }
 #quiz .arrows{ gap: 8px; }
-#quiz .arTok{ font-size: clamp(45px, 6vw, 28px); padding: 12px 24px; }
+#quiz .arTok{ font-size: clamp(20px, 6vw, 28px); padding: 4px 8px; }
 
 /* 計時條更薄一點，少占高度 */
 #quiz .bar{ height: 10px; }
@@ -1393,7 +1393,7 @@ button.primary:not(:disabled):active{
 /* hide numeric badges next to mode cards */
 .mode-badge, .badgeN, .modeCount { display:none !important; }
 /* dialog base */
-#rulesDialog { border: none; padding: 0; }
+#rulesDialog { max-width: 860px; border: none; padding: 0; }
 #rulesDialog::backdrop { background: rgba(0,0,0,.45); }
 /* card */
 #rulesDialog .card, #rulesDialog .rules-card{
@@ -1432,6 +1432,7 @@ button.primary:not(:disabled):active{
     <div class="stack">
       <div class="stack">
         <div class="muted">選擇測驗類型：</div>
+        <button id="easyModeBtn" class="type-btn" data-easy="1">EASY</button>
         <div class="stack">
           <button data-type="B" class="type-btn" id="tB">Eazy（方向 — 面向對應）</button>
           <button data-type="A" class="type-btn" id="tA">Normal（方向理解、步驟記憶）</button>
@@ -1533,19 +1534,12 @@ button.primary:not(:disabled):active{
       overflow: hidden;
       box-shadow: 0 0 12px rgba(0,0,0,0.15);
     ">
-      
-    <script>
-        function sendCommand(cmd, data = null) {
-            const commandPayload = {
-                cmd: cmd,
-                data: data,
-                timestamp: new Date().getTime() 
-            };
-            
-            localStorage.setItem('ble_command', JSON.stringify(commandPayload));
-            console.log('已傳送指令:', commandPayload);
-        }
-    </script>
+      <iframe
+        src="https://ffunway.github.io/easy_controller/"
+        style="width: 100%; height: 150px; border: none;"
+        loading="lazy"
+        title="Easy Controller"
+      ></iframe>
     </div>
   </div>
 </section>
@@ -1713,7 +1707,8 @@ const BASE2DIR = { '↑':'UP', '→':'RIGHT', '↓':'DOWN', '←':'LEFT' };
   score: 0,
   wrong: 0,            // 當前題的錯誤次數
   passMode: 'mustCorrect', // 'mustCorrect'：答對才能前進；'alwaysNext'：對錯都可按「下一題」
-  rules: null          // 目前測驗型別的方案 A 規則
+  rules: null,          // 目前測驗型別的方案 A 規則
+  easyDemo: false,
 };
 
 // ★ 方案 A 規則（固定題數 + 基礎分 + 時間加分 + 錯誤上限 + 跳過鍵）
@@ -1909,51 +1904,101 @@ btn.addEventListener('click', () => {
       }, { once:false });
     });
   })();
-  const levels=$('#levels'), startBtn=$('#startBtn'), pickTag=$('#pickTag');
-  $$('.type-btn').forEach(b=>b.onclick=()=>{ game.type=b.dataset.type; $$('.type-btn').forEach(x=>x.classList.toggle('active',x===b)); pickTag.textContent='已選：'+game.type; startBtn.disabled=false; });
+  // const levels=$('#levels'), startBtn=$('#startBtn'), pickTag=$('#pickTag');
+  // $$('.type-btn').forEach(b=>b.onclick=()=>{ game.type=b.dataset.type; $$('.type-btn').forEach(x=>x.classList.toggle('active',x===b)); pickTag.textContent='已選：'+game.type; startBtn.disabled=false; });
+  const levels = $('#levels'),
+        startBtn = $('#startBtn'),
+        pickTag  = $('#pickTag');
+  const easyBtn  = document.getElementById('easyModeBtn');
+
+  // 切換一般三種測驗（A / B / C）
+  function setTypeActive(target){
+    $$('.type-btn').forEach(x => {
+      if (!x) return;
+      if (x === target) x.classList.add('active');
+      else x.classList.remove('active');
+    });
+  }
+
+  $$('.type-btn').forEach(b => {
+    // EASY 模式另外處理
+    if (b && b.id === 'easyModeBtn') return;
+    b.onclick = () => {
+      game.easyDemo = false; // <-- ★ 關鍵：點 A/B/C 時關閉 Easy 模式
+      game.type = b.dataset.type; // 'A' | 'B' | 'C'
+      setTypeActive(b);
+      const rule = SCHEME_A[game.type];
+      const N = rule && rule.N ? rule.N : Math.max(1, Math.min(10, parseInt(levels.value || '4', 10)));
+      levels.value = String(N);
+      if (pickTag) pickTag.textContent = '已選：' + game.type;
+      if (startBtn) startBtn.disabled = false;
+    };
+  });
+
+  // EASY 模式：採 B 測驗題目、固定 3 題、不計分、必定通關
+  if (easyBtn) {
+    easyBtn.onclick = () => {
+      game.easyDemo = true;
+      game.type = 'B'; // 題目仍使用 B 測驗
+      setTypeActive(easyBtn);
+      levels.value = '3';
+      if (pickTag) pickTag.textContent = 'EASY 模式（B 測驗，3 題，不計分）';
+      if (startBtn) startBtn.disabled = false;
+    };
+  }
   const goto = id => ['home','quiz','result'].forEach(s=>$('#'+s).style.display=(s===id)?'block':'none');
   $('#again').onclick=()=>goto('home'); $('#toHome').onclick=()=>goto('home');
 
   startBtn.onclick = async ()=>{
-  try{
-    if (!window.__FIREBASE_READY__) {
-      throw new Error('Firebase 尚未登入（Anonymous）。稍候再試。');
+    try{
+      if (!window.__FIREBASE_READY__) {
+        throw new Error('Firebase 尚未登入（Anonymous）。稍候再試。');
+      }
+      
+      // 方案 A：依測驗型別固定題數
+      game.rules = SCHEME_A[game.type];
+
+      // vvvvvvvvvv ★ 這裡是主要的修改點 vvvvvvvvvv
+      // ★ EASY 模式：採 B 測驗題目但固定 3 題
+      if (game.easyDemo) {
+        game.N = 3;
+      } else {
+        // 這是您原有的邏輯，現在移到 else 裡面
+        game.N = game.rules ? game.rules.N : Math.max(1, Math.min(10, parseInt(levels.value||'4',10)));
+      }
+      // ^^^^^^^^^^ ★ 修改結束 ^^^^^^^^^^
+
+      // ★ 重置分數
+      game.score = 0;
+      document.getElementById('scoreTop').textContent = '0';
+
+      // ★ 流程模式（展覽時可切換：'mustCorrect' 或 'alwaysNext'）
+      game.passMode = 'mustCorrect'; // ← 想改成對錯都可前進就換成 'alwaysNext'
+
+      await prepareRound();
+      $('#idxTotal').textContent = String(game.seq.length);
+      levels.value = String(game.seq.length);
+      $('#quizTitle').textContent = '測驗 ' + game.type;
+      document.getElementById('quiz').dataset.type = game.type;
+      goto('quiz'); nextItem();
+
+      // 跳過鍵：不計分，紀錄 skipped
+      document.getElementById('skipBtn').onclick = () => {
+        if (!game.rules?.skip) return;           // ← 改成用 game.rules.skip
+        game.responses.push({ ms: Math.round((now()-game.t0)), correct:false, skipped:true });
+        game.i++; nextItem();
+      };
+
+      // 『下一題』鍵：只有 flow=free 時顯示；或達到錯誤上限自動啟用
+      document.getElementById('nextBtn').onclick = () => {
+        game.i++; nextItem();
+      };
+
+    }catch(e){
+      console.error(e);
+      alert('載入題目時發生錯誤：' + (e?.message || e));
     }
-    // 方案 A：依測驗型別固定題數
-game.rules = SCHEME_A[game.type];
-game.N = game.rules ? game.rules.N : Math.max(1, Math.min(10, parseInt(levels.value||'4',10)));
-
-// ★ 重置分數
-game.score = 0;
-document.getElementById('scoreTop').textContent = '0';
-
-// ★ 流程模式（展覽時可切換：'mustCorrect' 或 'alwaysNext'）
-game.passMode = 'mustCorrect'; // ← 想改成對錯都可前進就換成 'alwaysNext'
-
-    await prepareRound();
-    $('#idxTotal').textContent = String(game.seq.length);
-    levels.value = String(game.seq.length);
-    $('#quizTitle').textContent = '測驗 ' + game.type;
-    document.getElementById('quiz').dataset.type = game.type;
-    goto('quiz'); nextItem();
-
-    // 跳過鍵：不計分，紀錄 skipped
-document.getElementById('skipBtn').onclick = () => {
-  if (!game.rules?.skip) return;           // ← 改成用 game.rules.skip
-  game.responses.push({ ms: Math.round((now()-game.t0)), correct:false, skipped:true });
-  game.i++; nextItem();
-};
-
-// 『下一題』鍵：只有 flow=free 時顯示；或達到錯誤上限自動啟用
-document.getElementById('nextBtn').onclick = () => {
-  game.i++; nextItem();
-};
-
-  }catch(e){
-    console.error(e);
-    alert('載入題目時發生錯誤：' + (e?.message || e));
-  }
-};
+  };
 
 
   /* 題庫來源（保留） */
@@ -3114,8 +3159,14 @@ function showResult(){
     x => x && (x.correct === true || x.skipped === true)
   );
 
-  // 題數上限：以規則設定為主，其次是實際題目數
-  const N = (r && r.N) ? r.N : (game.seq && game.seq.length ? game.seq.length : decidedList.length);
+  // 題數上限：一般模式依規則；EASY 模式則以實際作答題數為主
+  const isEasyDemo = !!game.easyDemo;
+  let N = 0;
+  if (isEasyDemo) {
+    N = decidedList.length;
+  } else {
+    N = (r && r.N) ? r.N : (game.seq && game.seq.length ? game.seq.length : decidedList.length);
+  }
   const perItem = decidedList.slice(0, N);
   const sec = perItem.map(x => (x.ms || 0) / 1000);
   const avg = sec.length ? (sec.reduce((a, b) => a + b, 0) / sec.length) : 0;
@@ -3127,10 +3178,14 @@ function showResult(){
   $('#rtAvg').textContent  = avg ? avg.toFixed(2) + ' 秒' : '-';
 
   // ---- 總分與通關（依照本輪實際得分計算）----
-  // 先用目前「得分 / 理論最高分」換算百分比，再決定是否通關
+// 先用目前「得分 / 理論最高分」換算百分比，再決定是否通關
   let pct = 0;
   let passed = false;
-  if (r) {
+  if (isEasyDemo) {
+    // EASY 模式：不計分，但一律視為通關
+    pct = 100;
+    passed = true;
+  } else if (r) {
     // 最高分 = 題數 × (base + 該型別最快時間加分)
     const bestTimeBonus = (r.timeBonus && r.timeBonus[0] && r.timeBonus[0].b) ? r.timeBonus[0].b : 0;
     const maxScore = N * ((r.base || 0) + bestTimeBonus);
@@ -3140,15 +3195,8 @@ function showResult(){
     passed = pct >= 70; // 70% 以上算通關
   }
 
-  if (pct >= 85) {
-    sendCommand('bee');
-  } else if (pct >= 70) {
-    sendCommand('haha');
-  } else {
-    sendCommand('fail');
-  }
-  
-  // ---- 結果畫面：超顯眼總分區塊 ----
+
+// ---- 結果畫面：超顯眼總分區塊 ----
   const rtScoreEl   = document.getElementById('rtScore');
   const rtPassEl    = document.getElementById('rtPass');
   const scoreBig    = document.getElementById('rtScoreBig');
@@ -3160,7 +3208,11 @@ function showResult(){
 
   // 小字版（原本列在一排的那個）
   if (rtScoreEl) {
-    rtScoreEl.textContent = `${game.score} 分（${pct}%）`;
+    if (isEasyDemo) {
+      rtScoreEl.textContent = '通關';
+    } else {
+      rtScoreEl.textContent = `${game.score} 分（${pct}%）`;
+    }
     rtScoreEl.style.fontSize = '22px';
     rtScoreEl.style.fontWeight = '700';
   }
@@ -3174,10 +3226,10 @@ function showResult(){
 
   // 大字版（最顯眼的那塊）
   if (scoreBig) {
-    scoreBig.textContent = `${game.score} 分`;
+    scoreBig.textContent = isEasyDemo ? '不計分' : `${game.score} 分`;
   }
   if (pctBig) {
-    pctBig.textContent = `${pct}%`;
+    pctBig.textContent = isEasyDemo ? '—' : `${pct}%`;
   }
   if (passBig) {
     passBig.textContent = passed ? '✅ 通關成功' : '❌ 尚未通關';
@@ -3192,7 +3244,8 @@ function showResult(){
       : '0 0 0 3px rgba(198,40,40,.25)';
   }
 
-  // ---- 繪製每題用時圖表（直條圖）----
+
+// ---- 繪製每題用時圖表（直條圖）----
   if (barRow) {
     barRow.innerHTML = '';
     if (sec.length) {
